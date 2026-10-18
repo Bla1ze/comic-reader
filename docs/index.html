@@ -69,6 +69,16 @@ li { margin: 6px 0; }
 code { font: 14px/1.4 Menlo, monospace; color: var(--red); word-break: break-word; }
 .note { font-size: 15px; color: var(--muted); }
 
+/* FAQ */
+.faq { display: grid; gap: 14px; }
+.faq details { background: var(--white); border: 4px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); }
+.faq summary { cursor: pointer; list-style: none; padding: 12px 18px; font: 26px Bangers, Impact, sans-serif; letter-spacing: .04em; color: var(--blue); }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::before { content: "+"; display: inline-block; width: 28px; color: var(--red); font: 900 28px/1 system-ui, sans-serif; vertical-align: -1px; }
+.faq details[open] summary::before { content: "\2212"; }
+.faq details[open] summary { border-bottom: 3px solid var(--ink); background: var(--yellow); color: var(--ink); }
+.faq p { margin: 0; padding: 12px 18px 16px 44px; }
+
 footer { margin-top: 50px; border-top: 5px solid var(--ink); background: var(--yellow); padding: 26px 0 34px; font-size: 15px; }
 footer p { margin: 6px 0; }
 
@@ -90,6 +100,7 @@ footer p { margin: 6px 0; }
     <div class="btns">
       <a class="btn" href="https://github.com/Bla1ze/comic-reader/releases/latest">Download</a>
       <a class="btn alt" href="Comic%20Reader%20Guide.pdf">The guide (PDF)</a>
+      <a class="btn alt" href="#faq">FAQ</a>
       <a class="btn alt" href="https://github.com/Bla1ze/comic-reader">Source code</a>
     </div>
   </div>
@@ -153,6 +164,28 @@ footer p { margin: 6px 0; }
     </div>
   </div>
   <p class="note">Comic Reader ships no copyrighted books: bring your own. Read <a href="Comic%20Reader%20Guide.pdf">the guide</a> for every button.</p>
+</section>
+
+<section id="faq">
+  <h2><small>Questions</small>FAQ</h2>
+  <div class="faq">
+    <details><summary>Which cabinets does it work on?</summary><p>It's made for the AtGames Legends Pinball 4KP and HDP: pages on the playfield, the cover on the backglass, the page number on the DMD. It works out which screen is which on each model by itself. Other Legends models haven't been tried.</p></details>
+    <details><summary>Where do I get comics?</summary><p>Bring your own files. For free, legal ones, public-domain Golden Age comics are on the <a href="https://digitalcomicmuseum.com">Digital Comic Museum</a> and <a href="https://comicbookplus.com">Comic Book Plus</a> (both free with an account) and the <a href="https://archive.org">Internet Archive</a>. The release's sample pack has a few to start with. Comic Reader ships no copyrighted books.</p></details>
+    <details><summary>What files can it open?</summary><p>PDF, CBZ, CBR (RAR) and CBT comics, single pictures (JPG, PNG, WebP, GIF, BMP, TIFF), and a folder of pictures as one book, its pages in name order. It can't open CB7, EPUB, or comics locked to a store's app (DRM).</p></details>
+    <details><summary>How do I add books?</summary><p>Settings &gt; Wi-Fi upload, then open the address it shows on a phone or computer on the same network and enter the PIN. Or copy them to <code>external/comic-reader/comics/</code> (or <code>manuals/</code>) on the USB stick. A folder of books becomes a series.</p></details>
+    <details><summary>Wi-Fi upload won't open on my phone.</summary><p>Check the phone or computer is on the same network as the cabinet, not a guest network or mobile data: some routers' guest networks keep devices from seeing each other. Type the address exactly as shown, including the <code>:8080</code> part. A FAT32 stick can't take a single file over 4 GB.</p></details>
+    <details><summary>Why is the first page of some books slow?</summary><p>Scanned PDFs are the slowest kind, about a second a page on a 4KP; CBZ and CBR pages take about a quarter of a second. While you read, the next pages are drawn ahead, so turning is quick after the first.</p></details>
+    <details><summary>My book shows its file name, not its title.</summary><p>Titles and details come from a ComicInfo.xml file inside the comic. A book without one is named after its file: press Y for its details, then X to look it up in the Grand Comics Database. Keep the match with A, or try the next with X.</p></details>
+    <details><summary>The lookup says to wait.</summary><p>comics.org allows a few dozen lookups an hour for each home (all the devices on one internet connection share it), plus a short per-minute limit. The message says how long. Answers are kept for 30 days, so the next issue of a series needs fewer.</p></details>
+    <details><summary>Does it need the internet?</summary><p>Only for Check for updates and for looking up a book's details. Reading doesn't, and Wi-Fi upload only needs your home network.</p></details>
+    <details><summary>How do I update?</summary><p>Settings &gt; Check for updates downloads the newest release and restarts into it. Coming from 0.1.0, which had no updater, copy 0.2.0 over by hand once.</p></details>
+    <details><summary>Will updating or reinstalling lose my books or places?</summary><p>No. Updates replace only the app, its licenses and the guide; your books, reading places and settings are left alone. Places live in <code>data/progress.txt</code> on the stick; Settings &gt; Forget reading history clears them.</p></details>
+    <details><summary>A comic started reading itself.</summary><p>That's attract mode: after 5 minutes untouched in the library, random comics read themselves. Press any button to stop it. It doesn't count as reading. Settings &gt; Attract mode sets 5 or 10 minutes, or off.</p></details>
+    <details><summary>How do I read manga right to left?</summary><p>Settings &gt; Reading direction &gt; Right to left swaps the flippers. A manga marked right to left in its ComicInfo.xml reads that way on its own.</p></details>
+    <details><summary>What about two-page spreads?</summary><p>A wide page is shown fitted to the screen. Zoom in with Start (2x, 3x) and move along it with the joystick.</p></details>
+    <details><summary>Something went wrong.</summary><p>The app keeps a log at <code>external/comic-reader/data/comic-reader.log</code> on the stick, including a note if it crashes. Open an issue on <a href="https://github.com/Bla1ze/comic-reader/issues">GitHub</a> with the log and what you were doing.</p></details>
+    <details><summary>Is it free? Is it from AtGames?</summary><p>It's free software (GNU AGPL 3.0), made by Bla1ze. It isn't made or endorsed by AtGames.</p></details>
+  </div>
 </section>
 
 </main>

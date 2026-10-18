@@ -31,6 +31,7 @@ th, td { text-align: left; padding: 7px 9px; border-bottom: 2px solid #181412; v
 th { font-size: 16px; background: #ffd426; }
 td:first-child { color: #d6242a; font-size: 18px; white-space: nowrap; }
 .card { background: #fffbf0; border: 3px solid #181412; box-shadow: 5px 5px 0 #181412; padding: 10px 14px; margin: 0 0 12px; }
+.faqp .card { font-size: 12.5px; padding: 8px 12px; margin-bottom: 9px; }
 .card b { color: #1e56a8; }
 .row { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
 .row .text { flex: 1; }
@@ -154,6 +155,21 @@ code { font: 12px/1.4 Menlo, monospace; color: #d6242a; }
     </div>
   </div>
   <div class="foot"><span>Comic Reader Guide</span><span>6</span></div>
+</section>
+
+<section class="page faqp">
+  <h2><small>Questions</small>FAQ</h2>
+    <div class="card"><b>Which cabinets does it work on?</b> It's made for the AtGames Legends Pinball 4KP and HDP: pages on the playfield, the cover on the backglass, the page number on the DMD. It works out which screen is which on each model by itself. Other Legends models haven't been tried.</div>
+    <div class="card"><b>What files can it open?</b> PDF, CBZ, CBR (RAR) and CBT comics, single pictures (JPG, PNG, WebP, GIF, BMP, TIFF), and a folder of pictures as one book, its pages in name order. It can't open CB7, EPUB, or comics locked to a store's app (DRM).</div>
+    <div class="card"><b>Wi-Fi upload won't open on my phone.</b> Check the phone or computer is on the same network as the cabinet, not a guest network or mobile data: some routers' guest networks keep devices from seeing each other. Type the address exactly as shown, including the <code>:8080</code> part. A FAT32 stick can't take a single file over 4 GB.</div>
+    <div class="card"><b>Why is the first page of some books slow?</b> Scanned PDFs are the slowest kind, about a second a page on a 4KP; CBZ and CBR pages take about a quarter of a second. While you read, the next pages are drawn ahead, so turning is quick after the first.</div>
+    <div class="card"><b>My book shows its file name, not its title.</b> Titles and details come from a ComicInfo.xml file inside the comic. A book without one is named after its file: press Y for its details, then X to look it up in the Grand Comics Database. Keep the match with A, or try the next with X.</div>
+    <div class="card"><b>How do I update?</b> Settings &gt; Check for updates downloads the newest release and restarts into it. Coming from 0.1.0, which had no updater, copy 0.2.0 over by hand once.</div>
+    <div class="card"><b>Will updating or reinstalling lose my books or places?</b> No. Updates replace only the app, its licenses and the guide; your books, reading places and settings are left alone. Places live in <code>data/progress.txt</code> on the stick; Settings &gt; Forget reading history clears them.</div>
+    <div class="card"><b>A comic started reading itself.</b> That's attract mode: after 5 minutes untouched in the library, random comics read themselves. Press any button to stop it. It doesn't count as reading. Settings &gt; Attract mode sets 5 or 10 minutes, or off.</div>
+    <div class="card"><b>Something went wrong.</b> The app keeps a log at <code>external/comic-reader/data/comic-reader.log</code> on the stick, including a note if it crashes. Open an issue on <a href="https://github.com/Bla1ze/comic-reader/issues">GitHub</a> with the log and what you were doing.</div>
+  <p class="small">More at bla1ze.github.io/comic-reader</p>
+  <div class="foot"><span>Comic Reader Guide</span><span>7</span></div>
 </section>
 
 </body></html>
