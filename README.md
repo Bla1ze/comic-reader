@@ -4,7 +4,7 @@ Comics and manuals on an AtGames Legends pinball cabinet (4KP, HDP). Pages on
 the playfield, at the screen's full resolution (2160 x 3840 on a 4KP); the
 book's cover, title and progress on the backglass; the page number on the DMD.
 
-- **Formats:** PDF, CBZ, CBR (RAR, RAR5), CBT, single pictures (JPG, PNG, GIF,
+- **Formats:** PDF, CBZ, CBR (RAR), CBT, single pictures (JPG, PNG, GIF,
   BMP, TIFF), and a folder of pictures as one book (pages in name order).
 - **Library:** Continue (books you're partway through), Comics, Manuals and
   Wi-Fi upload. A folder of books is a series. Covers are drawn once and

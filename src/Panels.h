@@ -17,7 +17,7 @@
 //              its title, series and reading progress beside it;
 //   DMD:       the title, "Page 12 of 32" and a progress bar.
 // Composed on a worker thread (latest request wins). The backglass is redrawn
-// only when the book changes; the DMD on every page turn.
+// when the book or its page line changes, the DMD on every page turn.
 class Panels {
 public:
     struct Item {
