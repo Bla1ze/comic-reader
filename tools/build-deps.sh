@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Builds Comic Reader's static libraries for the cabinet: libarchive (RAR/7z
-# for MuPDF's CBR support) and MuPDF, with the SDK's own compiler (GCC 5.4,
+# Builds Comic Reader's static libraries for the cabinet: libarchive (RAR for
+# MuPDF's CBR support), libwebp's decoder (WebP pages) and MuPDF, with the SDK's
+# own compiler (GCC 5.4,
 # glibc 2.26 target). Run in the SDK image with the build folder at /workspace:
 #   docker run --rm --platform linux/amd64 -v <build folder>:/workspace \
 #     atgames-external-sdk:glibc-2.26-sdl2-v1 bash /workspace/apps/comic-reader/tools/build-deps.sh
@@ -13,6 +14,7 @@ P=$D/prefix
 J=$(nproc)
 MUPDF=mupdf-1.28.5-source
 ARCHIVE=libarchive-3.8.10
+WEBP=libwebp-1.6.0
 mkdir -p $D/src $D/out $P/lib $P/include
 
 (cd $D/dl && sha256sum -c $APP/tools/deps.sha256)
@@ -30,6 +32,15 @@ if [ ! -f $P/lib/libarchive.a ]; then
   make install > /dev/null
   # MuPDF includes "libarchive/archive.h".
   mkdir -p $P/include/libarchive && cp $P/include/archive*.h $P/include/libarchive/
+fi
+
+if [ ! -f $P/lib/libwebpdecoder.a ]; then
+  rm -rf $D/src/$WEBP && tar -xzf $D/dl/$WEBP.tar.gz -C $D/src
+  cd $D/src/$WEBP
+  make -f makefile.unix -j$J src/libwebpdecoder.a CC=aarch64-linux-gnu-gcc AR=aarch64-linux-gnu-ar \
+    EXTRA_FLAGS="-O2 -DNDEBUG" > $D/out/libwebp.log 2>&1 || { grep -m10 -E "error" $D/out/libwebp.log; exit 1; }
+  cp src/libwebpdecoder.a $P/lib/
+  mkdir -p $P/include/webp && cp src/webp/decode.h src/webp/types.h $P/include/webp/
 fi
 
 if [ ! -f $P/lib/libmupdf.a ]; then

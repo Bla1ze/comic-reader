@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 # Comic Reader: comics and manuals on an AtGames Legends cabinet. Builds with
-# the AtGames External Applications SDK toolchain; MuPDF and libarchive come
+# the AtGames External Applications SDK toolchain; MuPDF, libarchive and libwebp come
 # prebuilt from tools/build-deps.sh (static, the same compiler).
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
@@ -16,7 +16,7 @@ find_library(SDL2_LIBRARY NAMES SDL2 PATHS /usr/aarch64-linux-gnu/lib NO_DEFAULT
 if(NOT SDL2_INCLUDE_DIR OR NOT SDL2_LIBRARY)
     message(FATAL_ERROR "SDL2 was not found. Rebuild the SDK Docker image.")
 endif()
-foreach(lib mupdf mupdf-third archive)
+foreach(lib mupdf mupdf-third archive webpdecoder)
     if(NOT EXISTS "${COMIC_DEPS}/lib/lib${lib}.a")
         message(FATAL_ERROR "${COMIC_DEPS}/lib/lib${lib}.a is missing: run tools/build-deps.sh first.")
     endif()
@@ -48,11 +48,13 @@ add_executable(${ATGAMES_APP_NAME}
     src/compat.c
     src/Gfx.cpp
     src/Library.cpp
+    src/Net.cpp
     src/Pages.cpp
     src/PanelFont.cpp
     src/Panels.cpp
     src/Theme.cpp
     src/Transfer.cpp
+    src/Update.cpp
     src/main.cpp
 )
 set_property(TARGET ${ATGAMES_APP_NAME} PROPERTY CXX_STANDARD 14)
@@ -65,6 +67,7 @@ target_include_directories(${ATGAMES_APP_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vendor)
 target_link_libraries(${ATGAMES_APP_NAME} PRIVATE
     ${COMIC_DEPS}/lib/libmupdf.a ${COMIC_DEPS}/lib/libmupdf-third.a ${COMIC_DEPS}/lib/libarchive.a
+    ${COMIC_DEPS}/lib/libwebpdecoder.a
     ${SDL2_LIBRARY} pthread dl m)
 # Not stripped: a crash backtrace in the log then names functions. (-rdynamic
 # exports them to backtrace_symbols.)

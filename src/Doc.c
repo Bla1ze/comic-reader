@@ -2,6 +2,7 @@
 #include "Doc.h"
 
 #include <mupdf/fitz.h>
+#include <webp/decode.h>
 
 #include <ctype.h>
 #include <pthread.h>
@@ -106,11 +107,52 @@ void cr_ctx_drop(cr_ctx *ctx)
 	free(ctx);
 }
 
+/* ------------------------------------------------------------ WebP */
+
+/* MuPDF has no WebP decoder; its image loader calls this (our patch,
+ * tools/patches/mupdf-webp.patch) for RIFF/WEBP data. libwebp gives straight
+ * RGBA; MuPDF's pixmaps with alpha are premultiplied. */
+fz_pixmap *cr_decode_webp(fz_context *ctx, const unsigned char *data, size_t len)
+{
+	int w = 0, h = 0, x, y;
+	uint8_t *rgba;
+	fz_pixmap *pix;
+	unsigned char *dst;
+	ptrdiff_t stride;
+	if (!WebPGetInfo(data, len, &w, &h) || w <= 0 || h <= 0)
+		fz_throw(ctx, FZ_ERROR_FORMAT, "not a WebP picture");
+	rgba = WebPDecodeRGBA(data, len, &w, &h);
+	if (!rgba)
+		fz_throw(ctx, FZ_ERROR_FORMAT, "can't decode this WebP picture");
+	fz_try(ctx)
+		pix = fz_new_pixmap(ctx, fz_device_rgb(ctx), w, h, NULL, 1);
+	fz_catch(ctx)
+	{
+		WebPFree(rgba);
+		fz_rethrow(ctx);
+	}
+	dst = fz_pixmap_samples(ctx, pix);
+	stride = fz_pixmap_stride(ctx, pix);
+	for (y = 0; y < h; y++)
+		for (x = 0; x < w; x++)
+		{
+			const uint8_t *s = rgba + ((size_t)y * w + x) * 4;
+			unsigned char *d = dst + y * stride + x * 4;
+			const unsigned a = s[3];
+			d[0] = (unsigned char)((s[0] * a + 127) / 255);
+			d[1] = (unsigned char)((s[1] * a + 127) / 255);
+			d[2] = (unsigned char)((s[2] * a + 127) / 255);
+			d[3] = (unsigned char)a;
+		}
+	WebPFree(rgba);
+	return pix;
+}
+
 /* ------------------------------------------------------------ names */
 
 int cr_is_image_name(const char *name)
 {
-	static const char *exts[] = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tif", ".tiff", ".jp2", ".jpx", NULL};
+	static const char *exts[] = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tif", ".tiff", ".jp2", ".jpx", ".webp", NULL};
 	const char *dot = strrchr(name, '.');
 	int i;
 	if (!dot)
@@ -262,7 +304,8 @@ int cr_page_count(cr_book *book)
 	return n;
 }
 
-unsigned char *cr_render(cr_book *book, int page, int maxW, int maxH, int *w, int *h, char *err, int errlen)
+static unsigned char *render(cr_book *book, int page, int maxW, int maxH, float extra, const fz_irect *clip,
+                             int *ox, int *oy, int *w, int *h, char *err, int errlen)
 {
 	fz_context *fz = book->ctx->fz;
 	fz_document *volatile single = NULL;
@@ -296,9 +339,14 @@ unsigned char *cr_render(cr_book *book, int page, int maxW, int maxH, int *w, in
 		ph = b.y1 - b.y0;
 		if (pw <= 0 || ph <= 0)
 			fz_throw(fz, FZ_ERROR_FORMAT, "empty page");
-		zoom = fz_min(maxW / pw, maxH / ph);
-		ctm = fz_scale(zoom, zoom);
+		zoom = fz_min(maxW / pw, maxH / ph) * extra;
+		/* Page origin at (0, 0), so a clip is in the scaled page's own pixels. */
+		ctm = fz_concat(fz_translate(-b.x0, -b.y0), fz_scale(zoom, zoom));
 		ib = fz_round_rect(fz_transform_rect(b, ctm));
+		if (clip)
+			ib = fz_intersect_irect(ib, *clip);
+		if (fz_is_empty_irect(ib))
+			fz_throw(fz, FZ_ERROR_ARGUMENT, "nothing to draw there");
 		pix = fz_new_pixmap_with_bbox(fz, fz_device_rgb(fz), ib, NULL, 1);
 		fz_clear_pixmap_with_value(fz, pix, 255); /* opaque white */
 		dev = fz_new_draw_device(fz, ctm, pix);
@@ -316,6 +364,10 @@ unsigned char *cr_render(cr_book *book, int page, int maxW, int maxH, int *w, in
 			memcpy(out + (size_t)y * W * 4, src + y * stride, (size_t)W * 4);
 		*w = W;
 		*h = H;
+		if (ox)
+			*ox = ib.x0;
+		if (oy)
+			*oy = ib.y0;
 	}
 	fz_always(fz)
 	{
@@ -331,6 +383,22 @@ unsigned char *cr_render(cr_book *book, int page, int maxW, int maxH, int *w, in
 		return NULL;
 	}
 	return out;
+}
+
+unsigned char *cr_render(cr_book *book, int page, int maxW, int maxH, int *w, int *h, char *err, int errlen)
+{
+	return render(book, page, maxW, maxH, 1.0f, NULL, NULL, NULL, w, h, err, errlen);
+}
+
+unsigned char *cr_render_region(cr_book *book, int page, int fitW, int fitH, float zoom, int x, int y, int w, int h,
+                                int *outX, int *outY, int *outW, int *outH, char *err, int errlen)
+{
+	fz_irect clip;
+	clip.x0 = x;
+	clip.y0 = y;
+	clip.x1 = x + w;
+	clip.y1 = y + h;
+	return render(book, page, fitW, fitH, zoom, &clip, outX, outY, outW, outH, err, errlen);
 }
 
 int cr_save_jpeg(cr_ctx *ctx, const unsigned char *rgba, int w, int h, const char *path, int quality)

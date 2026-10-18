@@ -5,25 +5,35 @@ the playfield, at the screen's full resolution (2160 x 3840 on a 4KP); the
 book's cover over a blur of itself on the backglass; the title and page number
 on the DMD.
 
-- **Formats:** PDF, CBZ, CBR (RAR), CBT, single pictures (JPG, PNG, GIF,
-  BMP, TIFF), and a folder of pictures as one book (pages in name order).
+- **Formats:** PDF, CBZ, CBR (RAR), CBT, single pictures (JPG, PNG, WebP, GIF,
+  BMP, TIFF), and a folder of pictures as one book (pages in name order). WebP
+  pages inside CBZ / CBR work too.
 - **Library:** Continue (books you're partway through), Comics, Manuals and
-  Wi-Fi upload. A folder of books is a series. Covers are drawn once and
-  cached in `data/covers/`.
+  Settings. A folder of books is a series. Covers are drawn once and cached in
+  `data/covers/`. Books with a `ComicInfo.xml` show their series, issue, story,
+  date, publisher and credits (press Y), and manga marked right to left opens
+  that way.
+- **Zoom:** Start zooms to 2x, then 3x; the joystick moves around the page. A
+  sharp copy of the part on screen is drawn in the background.
+- **Page turn:** a page curl (or a slide, or none).
 - **Reading:** progress is saved per book, and a book opens where you left it.
   Pages are drawn ahead on the fast cores, so turning is immediate.
-- **Wi-Fi upload:** open the tab, then the address shown, on any phone or
-  computer on the same network, and enter the PIN. Pick Comics or Manuals and a
-  series (or a new one), and drop files or a folder of pages.
+- **Settings:** Wi-Fi upload (open the address shown on any phone or computer on
+  the same network, enter the PIN, drop files or a folder of pages), Check for
+  updates (from this repo's releases; your books and places are kept), Page turn,
+  Reading direction (right to left for manga), Forget reading history, Redraw
+  covers, About.
 
 ## Controls
 
 | | Library | Reading |
 |---|---|---|
-| Flippers | Previous / next shelf | Previous / next page (hold to flip fast) |
-| Joystick | Move | Left / right: turn the page |
-| A or Start | Open | A: next page; Start: show the page number |
-| B | Back, or exit | Back to the library |
+| Flippers | Previous / next shelf | Previous / next page (hold to flip fast; swapped right to left) |
+| Joystick | Move | Left / right turn the page; zoomed in, it moves around |
+| A | Open | Next page |
+| Start | Open | Zoom: 2x, 3x, back to the whole page |
+| Y | The book's details | Zoom |
+| B | Back, or exit | Whole page (if zoomed), else back to the library |
 
 ## On the USB stick
 
@@ -40,7 +50,7 @@ external/comic-reader/
 Needs the AtGames External Applications SDK build folder (its Docker image).
 
 ```sh
-tools/fetch-deps.sh <build folder>          # MuPDF 1.28.5 + libarchive 3.8.10 sources
+tools/fetch-deps.sh <build folder>          # MuPDF 1.28.5, libarchive 3.8.10, libwebp 1.6.0 sources
 rsync -a --exclude .git --exclude build ./ <build folder>/apps/comic-reader/
 docker run --rm --platform linux/amd64 -v <build folder>:/workspace \
   atgames-external-sdk:glibc-2.26-sdl2-v1 bash /workspace/apps/comic-reader/tools/build-deps.sh

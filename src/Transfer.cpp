@@ -106,7 +106,7 @@ footer a{color:var(--blue)}
    <button id="pick">Choose files</button>
    <button id="pickDir" class="alt">Choose a folder of pages</button>
   </div>
-  <input id="files" type="file" multiple class="hidden" accept=".pdf,.cbz,.cbr,.cbt,.jpg,.jpeg,.png,.gif,.bmp,.tif,.tiff">
+  <input id="files" type="file" multiple class="hidden" accept=".pdf,.cbz,.cbr,.cbt,.jpg,.jpeg,.png,.gif,.bmp,.tif,.tiff,.webp">
   <input id="dir" type="file" webkitdirectory class="hidden">
   <p class="hint" id="space"></p>
  </div>
@@ -115,7 +115,7 @@ footer a{color:var(--blue)}
 <footer>Comic Reader is free software (AGPL-3.0) and uses MuPDF.
  <a href="https://github.com/Bla1ze/comic-reader">Source code</a></footer>
 <script>
-const BOOK = ['pdf','cbz','cbr','cbt'], PIC = ['jpg','jpeg','png','gif','bmp','tif','tiff'];
+const BOOK = ['pdf','cbz','cbr','cbt'], PIC = ['jpg','jpeg','png','gif','bmp','tif','tiff','webp'];
 let pin = sessionStorage.getItem('pin') || '', shelves = [], busy = false, queue = [];
 const $ = id => document.getElementById(id);
 const fmt = b => b > 1e9 ? (b / 1e9).toFixed(1) + ' GB' : b > 1e6 ? (b / 1e6).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1e3)) + ' KB';
@@ -334,7 +334,7 @@ const Shelf* findShelf(const std::string& id) {
 }
 
 bool allowedExt(const std::string& ext) {
-    for (const char* e : {"pdf", "cbz", "cbr", "cbt", "jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff"})
+    for (const char* e : {"pdf", "cbz", "cbr", "cbt", "jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp"})
         if (ext == e) return true;
     return false;
 }

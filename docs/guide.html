@@ -45,7 +45,7 @@ code { font: 13px/1.4 Menlo, monospace; color: #d6242a; }
     <div class="screen"><b>Backglass</b>The book's cover.</div>
     <div class="screen"><b>DMD</b>The title and the page number.</div>
   </div>
-  <div class="foot"><span>Version 0.1</span><span>Turn the page with the right flipper</span></div>
+  <div class="foot"><span>Version 0.2</span><span>Turn the page with the right flipper</span></div>
 </section>
 
 <section class="page">
@@ -54,16 +54,17 @@ code { font: 13px/1.4 Menlo, monospace; color: #d6242a; }
   <table>
     <tr><th>Button</th><th>In the library</th><th>While reading</th></tr>
     <tr><td>Flippers</td><td>Previous or next shelf</td><td>Previous or next page. Hold to flip fast.</td></tr>
-    <tr><td>Joystick</td><td>Move between books</td><td>Left and right turn the page</td></tr>
+    <tr><td>Joystick</td><td>Move between books</td><td>Turn the page; zoomed in, move around it</td></tr>
     <tr><td>A</td><td>Open the book or series</td><td>Next page</td></tr>
-    <tr><td>Start</td><td>Open</td><td>Show the title and page number</td></tr>
-    <tr><td>B</td><td>Back, or exit the app</td><td>Back to the library</td></tr>
+    <tr><td>Start</td><td>Open</td><td>Zoom in: 2x, 3x, then the whole page</td></tr>
+    <tr><td>Y</td><td>The book's details</td><td>Zoom in</td></tr>
+    <tr><td>B</td><td>Back, or exit the app</td><td>The whole page, or back to the library</td></tr>
   </table>
   <h2><small>Your books</small>Shelves</h2>
   <div class="rule"></div>
   <div class="card"><b>Continue</b> lists the books you're partway through. A book always opens on the page where you stopped.</div>
   <div class="card"><b>Comics</b> and <b>Manuals</b> hold your books. A folder of books shows as a series: open it to see the issues.</div>
-  <div class="card"><b>Wi-Fi upload</b> lets you send books from a phone or computer (next page).</div>
+  <div class="card"><b>Settings</b> has Wi-Fi upload (next page), Check for updates, the Page turn (curl, slide or none), Reading direction (right to left for manga), Forget reading history, Redraw covers and About.</div>
   <div class="foot"><span>Comic Reader Guide</span><span>2</span></div>
 </section>
 
@@ -71,10 +72,10 @@ code { font: 13px/1.4 Menlo, monospace; color: #d6242a; }
   <h2><small>Adding books</small>Wi-Fi upload</h2>
   <div class="rule"></div>
   <ol>
-    <li>Go to the <b>Wi-Fi upload</b> shelf. The cabinet shows an address and a four-digit PIN.</li>
+    <li>In <b>Settings</b>, open <b>Wi-Fi upload</b>. The cabinet shows an address and a four-digit PIN.</li>
     <li>On a phone or computer on the same network, open the address in a browser and enter the PIN.</li>
     <li>Choose <b>Comics</b> or <b>Manuals</b>, and a series if you like (or make a new one).</li>
-    <li>Drop in your files, or a folder of page pictures. Leave the shelf when they're sent: they're in your library.</li>
+    <li>Drop in your files, or a folder of page pictures. Press B when they're sent: they're in your library.</li>
   </ol>
   <h2><small>Or copy them</small>On the USB stick</h2>
   <div class="rule"></div>
@@ -82,7 +83,7 @@ code { font: 13px/1.4 Menlo, monospace; color: #d6242a; }
     <code>comics/Planet Comics/Planet Comics 037.cbr</code></div>
   <h2><small>What it opens</small>File types</h2>
   <div class="rule"></div>
-  <div class="card"><b>PDF</b>, <b>CBZ</b>, <b>CBR</b> and <b>CBT</b> comics, single pictures (JPG, PNG, GIF, BMP, TIFF), and a folder of pictures as one book, its pages in name order.</div>
+  <div class="card"><b>PDF</b>, <b>CBZ</b>, <b>CBR</b> and <b>CBT</b> comics, single pictures (JPG, PNG, WebP, GIF, BMP, TIFF), and a folder of pictures as one book, its pages in name order. A <b>ComicInfo.xml</b> inside a comic gives it its series, issue and credits (press Y).</div>
   <div class="foot"><span>Comic Reader Guide</span><span>3</span></div>
 </section>
 

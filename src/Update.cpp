@@ -1,0 +1,434 @@
+#include "Update.h"
+
+#include "Library.h"
+#include "Version.h"
+// stbi_zlib_decode_noheader_buffer: stb_image's inflate, compiled here (PNG only).
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
+#define STBI_NO_STDIO
+#include "vendor/stb_image.h"
+
+#include <algorithm>
+#include <cctype>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <fstream>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <vector>
+
+using Library::log;
+
+namespace {
+
+// Every release (newest first), for the latest one and the notes of all those
+// between it and this build.
+const char* kReleases = "https://api.github.com/repos/Bla1ze/comic-reader/releases?per_page=30";
+
+// For previewing in the simulator only: COMIC_READER_RELEASES_FILE reads the
+// release list from a file instead of GitHub, and COMIC_READER_PRETEND_VERSION
+// stands in for this build's version. Neither is set on a cabinet.
+std::string currentVersion() {
+    const char* v = std::getenv("COMIC_READER_PRETEND_VERSION");
+    return v && *v ? v : APP_VERSION;
+}
+
+// `"key": true` somewhere in s.
+bool jsonTrue(const std::string& s, const char* key) {
+    const std::string k = std::string("\"") + key + "\"";
+    size_t at = s.find(k);
+    if (at == std::string::npos) return false;
+    at += k.size();
+    while (at < s.size() && (s[at] == ' ' || s[at] == ':')) ++at;
+    return s.compare(at, 4, "true") == 0;
+}
+
+// A release body down to what a player wants to read: every "## " section but
+// the install one (download steps, guides link, checksum), no top-level title.
+std::string userNotes(const std::string& body) {
+    std::string out, line;
+    bool skip = false;
+    for (size_t i = 0; i <= body.size(); ++i) {
+        if (i < body.size() && body[i] != '\n') { if (body[i] != '\r') line += body[i]; continue; }
+        if (line.compare(0, 3, "## ") == 0) {
+            std::string t = line.substr(3);
+            for (char& c : t) c = (char)std::tolower((unsigned char)c);
+            skip = t.compare(0, 7, "install") == 0;
+        } else if (line.compare(0, 2, "# ") == 0) {
+            line.clear();
+            continue;
+        }
+        if (!skip) out += line + "\n";
+        line.clear();
+    }
+    while (!out.empty() && (out.back() == '\n' || out.back() == ' ')) out.pop_back();
+    return out;
+}
+const char* kPrefix = "external/comic-reader/";
+
+std::vector<int> versionParts(std::string v) {
+    if (!v.empty() && (v[0] == 'v' || v[0] == 'V')) v.erase(0, 1);
+    std::vector<int> out;
+    for (size_t at = 0; at < v.size();) {
+        size_t dot = v.find('.', at);
+        out.push_back(std::atoi(v.substr(at, dot == std::string::npos ? std::string::npos : dot - at).c_str()));
+        if (dot == std::string::npos) break;
+        at = dot + 1;
+    }
+    while (out.size() < 3) out.push_back(0);
+    return out;
+}
+
+bool isNewer(const std::string& latest, const std::string& current) {
+    return versionParts(latest) > versionParts(current);
+}
+
+uint32_t crcUpdate(uint32_t crc, const uint8_t* p, size_t n) {
+    static uint32_t table[256];
+    static bool ready = false;
+    if (!ready) {
+        for (uint32_t i = 0; i < 256; ++i) {
+            uint32_t c = i;
+            for (int k = 0; k < 8; ++k) c = c & 1 ? 0xEDB88320u ^ (c >> 1) : c >> 1;
+            table[i] = c;
+        }
+        ready = true;
+    }
+    crc = ~crc;
+    while (n--) crc = table[(crc ^ *p++) & 0xFF] ^ (crc >> 8);
+    return ~crc;
+}
+
+// CRC-32 of a file on the stick, or false if it can't be read.
+bool crcFile(const std::string& path, uint32_t& crc, uint64_t& size) {
+    FILE* f = std::fopen(path.c_str(), "rb");
+    if (!f) return false;
+    std::vector<uint8_t> buf(1 << 20);
+    crc = 0;
+    size = 0;
+    size_t n;
+    while ((n = std::fread(buf.data(), 1, buf.size(), f)) > 0) {
+        crc = crcUpdate(crc, buf.data(), n);
+        size += n;
+    }
+    std::fclose(f);
+    return true;
+}
+
+uint32_t rd32(const std::string& s, size_t at) {
+    const uint8_t* p = (const uint8_t*)s.data() + at;
+    return p[0] | (p[1] << 8) | (p[2] << 16) | ((uint32_t)p[3] << 24);
+}
+uint16_t rd16(const std::string& s, size_t at) {
+    const uint8_t* p = (const uint8_t*)s.data() + at;
+    return (uint16_t)(p[0] | (p[1] << 8));
+}
+
+void makeDirs(const std::string& dir) {
+    for (size_t at = 1; at <= dir.size(); ++at)
+        if (at == dir.size() || dir[at] == '/') ::mkdir(dir.substr(0, at).c_str(), 0755);
+}
+
+// The number after "key": in a JSON object, from `at`.
+uint64_t jsonNumber(const std::string& s, const char* key, size_t at) {
+    const std::string k = std::string("\"") + key + "\"";
+    size_t p = s.find(k, at);
+    if (p == std::string::npos) return 0;
+    p += k.size();
+    while (p < s.size() && (s[p] == ' ' || s[p] == ':')) ++p;
+    return std::strtoull(s.c_str() + p, nullptr, 10);
+}
+
+} // namespace
+
+Updater::~Updater() { stop(); }
+
+void Updater::stop() {
+    m_curl.cancel();
+    if (m_thread.joinable()) m_thread.join();
+}
+
+// data/update-check.txt: when GitHub last answered, and the newest version it
+// had. Written only on an answer, so a cabinet that starts before its network
+// is up tries again at the next start.
+bool Updater::startupCheckDue(const std::string& appDir) {
+    struct stat st;
+    return ::stat((appDir + "/data/update-check.txt").c_str(), &st) != 0 || std::time(nullptr) - st.st_mtime > 3600;
+}
+
+bool Updater::isNewer(const std::string& version, const std::string& than) { return ::isNewer(version, than); }
+
+std::string Updater::knownLatest(const std::string& appDir) {
+    std::ifstream in(appDir + "/data/update-check.txt");
+    std::string when, version;
+    std::getline(in, when);
+    std::getline(in, version);
+    return version;
+}
+
+std::string Updater::latest() const {
+    std::lock_guard<std::mutex> lock(m_mu);
+    return m_latest;
+}
+
+std::string Updater::message() const {
+    std::lock_guard<std::mutex> lock(m_mu);
+    return m_message;
+}
+
+int Updater::progress() const {
+    std::string part;
+    uint64_t total;
+    {
+        std::lock_guard<std::mutex> lock(m_mu);
+        part = m_partPath;
+        total = m_size;
+    }
+    struct stat st;
+    if (part.empty() || !total || ::stat(part.c_str(), &st) != 0) return 0;
+    return (int)std::min<uint64_t>(100, (uint64_t)st.st_size * 100 / total);
+}
+
+void Updater::fail(const std::string& why) {
+    {
+        std::lock_guard<std::mutex> lock(m_mu);
+        m_message = why;
+    }
+    log("update: %s", why.c_str());
+    m_state = State::Failed;
+}
+
+void Updater::check(const std::string& appDir, bool quiet) {
+    const State s = m_state;
+    if (s == State::Checking || s == State::Downloading || s == State::Installing) return;
+    if (m_thread.joinable()) m_thread.join();
+    m_appDir = appDir;
+    m_quiet = quiet;
+    m_curl.reset();
+    m_state = State::Checking;
+    m_thread = std::thread([this]() { runCheck(); });
+}
+
+void Updater::install() {
+    if (m_state != State::Available) return;
+    if (m_thread.joinable()) m_thread.join();
+    m_quiet = false;
+    m_curl.reset();
+    m_state = State::Downloading;
+    m_thread = std::thread([this]() { runInstall(); });
+}
+
+void Updater::runCheck() {
+    if (!m_prepared) { m_curl.prepare(m_appDir); m_prepared = true; }
+    ::mkdir((m_appDir + "/data").c_str(), 0755);
+    const std::string tmp = m_appDir + "/data/.release.json", codeFile = m_appDir + "/data/.release.code";
+    std::string body;
+    int rc = 0, http = 200;
+    if (const char* f = std::getenv("COMIC_READER_RELEASES_FILE")) {
+        body = Net::readFile(f);
+        if (body.empty()) http = 404;
+    } else {
+        rc = m_curl.run({"--max-time", "30", "-o", tmp, "-w", "%{http_code}", kReleases}, codeFile, false);
+        body = rc == 0 ? Net::readFile(tmp) : "";
+        http = std::atoi(Net::readFile(codeFile).c_str());
+    }
+    ::unlink(tmp.c_str());
+    ::unlink(codeFile.c_str());
+    if (rc != 0) { fail(Net::message(rc, "GitHub")); return; }
+    if (http == 404) {  // nothing published yet
+        std::ofstream(m_appDir + "/data/update-check.txt") << std::time(nullptr) << "\n";
+        log("update: no release found");
+        m_state = State::NoRelease;
+        return;
+    }
+    if (http == 403 || http == 429) { fail("GitHub is busy - try again in an hour"); return; }
+    if (http != 200) { fail("GitHub answered " + std::to_string(http)); return; }
+    // One release per "tag_name": its fields up to the next release's tag.
+    struct Release { std::string version, url, notes; uint64_t size = 0; };
+    std::vector<Release> releases;
+    for (size_t at = body.find("\"tag_name\""); at != std::string::npos;) {
+        const size_t next = body.find("\"tag_name\"", at + 10);
+        const std::string seg = body.substr(at, next == std::string::npos ? std::string::npos : next - at);
+        at = next;
+        size_t p = 0;
+        const std::string tag = Net::jsonNext(seg, "tag_name", p);
+        if (tag.empty() || jsonTrue(seg, "draft") || jsonTrue(seg, "prerelease")) continue;
+        Release r;
+        r.version = tag[0] == 'v' || tag[0] == 'V' ? tag.substr(1) : tag;
+        // The release zip among its files.
+        p = 0;
+        while (true) {
+            std::string name = Net::jsonNext(seg, "name", p);
+            if (p == std::string::npos) break;
+            if (name.compare(0, 14, "comic-reader-v") == 0 && name.size() > 4 && name.compare(name.size() - 4, 4, ".zip") == 0) {
+                size_t u = p;
+                r.url = Net::jsonNext(seg, "browser_download_url", u);
+                r.size = jsonNumber(seg, "size", p);
+                break;
+            }
+        }
+        p = 0;
+        r.notes = userNotes(Net::jsonNext(seg, "body", p));
+        releases.push_back(r);
+    }
+    if (releases.empty()) { fail("GitHub's answer had no version"); return; }
+    std::sort(releases.begin(), releases.end(), [](const Release& a, const Release& b) { return isNewer(a.version, b.version); });
+    const Release& top = releases.front();
+    const std::string current = currentVersion();
+    std::vector<std::pair<std::string, std::string>> notes;
+    for (const Release& r : releases)
+        if (isNewer(r.version, current) && !r.notes.empty()) notes.push_back({r.version, r.notes});
+    std::ofstream(m_appDir + "/data/update-check.txt") << std::time(nullptr) << "\n" << top.version << "\n";
+    {
+        std::lock_guard<std::mutex> lock(m_mu);
+        m_latest = top.version;
+        m_url = top.url;
+        m_size = top.size;
+        m_notes = notes;
+    }
+    if (!isNewer(top.version, current)) {
+        log("update: v%s is the latest (this is v%s)", top.version.c_str(), current.c_str());
+        m_state = State::UpToDate;
+        return;
+    }
+    if (top.url.empty()) { fail("v" + top.version + " has no download"); return; }
+    log("update: v%s available (%llu bytes, notes for %zu release(s)): %s", top.version.c_str(),
+        (unsigned long long)top.size, notes.size(), top.url.c_str());
+    m_state = State::Available;
+}
+
+std::vector<std::pair<std::string, std::string>> Updater::notes() const {
+    std::lock_guard<std::mutex> lock(m_mu);
+    return m_notes;
+}
+
+void Updater::runInstall() {
+    std::string url, version;
+    uint64_t size;
+    {
+        std::lock_guard<std::mutex> lock(m_mu);
+        url = m_url;
+        version = m_latest;
+        size = m_size;
+        m_partPath = m_appDir + "/data/.update-v" + version + ".zip";
+    }
+    const std::string part = m_appDir + "/data/.update-v" + version + ".zip";
+    ::unlink(part.c_str());
+    int rc = m_curl.run({"--max-time", "3600", "-o", part, url});
+    struct stat st;
+    if (rc != 0 || ::stat(part.c_str(), &st) != 0 || (size && (uint64_t)st.st_size != size)) {
+        ::unlink(part.c_str());
+        fail(rc == -2 ? "Update stopped" : rc ? Net::message(rc, "GitHub") : "The download was incomplete");
+        return;
+    }
+    m_state = State::Installing;
+    std::string why;
+    bool ok = apply(part, why);
+    ::unlink(part.c_str());
+    {
+        std::lock_guard<std::mutex> lock(m_mu);
+        m_partPath.clear();
+    }
+    if (!ok) { fail(why); return; }
+    {
+        std::lock_guard<std::mutex> lock(m_mu);
+        m_message = "Updated " + std::to_string(m_updated.load()) + " files to v" + version;
+    }
+    log("update: %s", m_message.c_str());
+    m_state = State::Done;
+}
+
+// Extracts the files of the release zip that differ from the stick's, each to
+// a part file beside it, then renames them all into place (the app last).
+bool Updater::apply(const std::string& zipPath, std::string& why) {
+    const std::string zip = Net::readFile(zipPath);
+    if (zip.size() < 22) { why = "The download is not a zip"; return false; }
+    size_t eocd = std::string::npos;
+    for (size_t i = zip.size() - 22 + 1; i-- > (zip.size() > 65557 ? zip.size() - 65557 : 0);)
+        if (rd32(zip, i) == 0x06054b50) { eocd = i; break; }
+    if (eocd == std::string::npos) { why = "The download is damaged (no zip directory)"; return false; }
+    const size_t count = rd16(zip, eocd + 10), cdOff = rd32(zip, eocd + 16);
+    struct Pending { std::string part, dest; };
+    std::vector<Pending> pending;
+    auto discard = [&]() {
+        for (const Pending& p : pending) ::unlink(p.part.c_str());
+    };
+    size_t p = cdOff, unchanged = 0;
+    for (size_t i = 0; i < count; ++i) {
+        if (p + 46 > zip.size() || rd32(zip, p) != 0x02014b50) { discard(); why = "The download is damaged"; return false; }
+        const uint16_t method = rd16(zip, p + 10);
+        const uint32_t crc = rd32(zip, p + 16), csize = rd32(zip, p + 20), usize = rd32(zip, p + 24);
+        const uint16_t nlen = rd16(zip, p + 28), xlen = rd16(zip, p + 30), clen = rd16(zip, p + 32);
+        const uint32_t local = rd32(zip, p + 42);
+        const std::string name = zip.substr(p + 46, nlen);
+        p += 46 + nlen + xlen + clen;
+        if (name.compare(0, std::strlen(kPrefix), kPrefix) != 0 || name.back() == '/') continue;  // outside the app folder, or a folder
+        const std::string rel = name.substr(std::strlen(kPrefix));
+        // Only what a release ships, and nothing outside the app folder.
+        const std::string top = rel.substr(0, rel.find('/'));
+        // A release's own files: never the books, data or anything a user added.
+        bool allowed = top == "comic-reader.elf" || top == "comic-reader.xml" || top == "comic-reader.png" ||
+                       top == "licenses" || rel == "manuals/Comic Reader Guide.pdf" || rel == "comics/README.txt";
+        if (!allowed || rel.find("..") != std::string::npos || rel.find('\\') != std::string::npos || rel[0] == '/') {
+            log("update: skipped %s", name.c_str());
+            continue;
+        }
+        const std::string dest = m_appDir + "/" + rel;
+        struct stat st;
+        if ((rel == "comic-reader.png" || rel == "comic-reader.xml") && ::stat(dest.c_str(), &st) == 0) continue;  // the owner's own
+        uint32_t haveCrc;
+        uint64_t haveSize;
+        if (crcFile(dest, haveCrc, haveSize) && haveSize == usize && haveCrc == crc) { ++unchanged; continue; }
+        // Extract and check it.
+        if (local + 30 > zip.size() || rd32(zip, local) != 0x04034b50) { discard(); why = "The download is damaged"; return false; }
+        const size_t data = local + 30 + rd16(zip, local + 26) + rd16(zip, local + 28);
+        if (data + csize > zip.size()) { discard(); why = "The download is damaged"; return false; }
+        std::string out;
+        if (method == 0) {
+            out = zip.substr(data, csize);
+        } else if (method == 8) {
+            out.resize(usize);
+            int got = usize ? stbi_zlib_decode_noheader_buffer(&out[0], (int)usize, zip.data() + data, (int)csize) : 0;
+            if (got != (int)usize) { discard(); why = "Could not unpack " + rel; return false; }
+        } else {
+            discard();
+            why = "Unsupported compression in " + rel;
+            return false;
+        }
+        if (crcUpdate(0, (const uint8_t*)out.data(), out.size()) != crc) { discard(); why = "Checksum mismatch in " + rel; return false; }
+        const std::string dir = dest.substr(0, dest.find_last_of('/'));
+        makeDirs(dir);
+        const std::string part = dir + "/.update-" + dest.substr(dest.find_last_of('/') + 1) + ".part";
+        {
+            std::ofstream f(part, std::ios::binary);
+            f.write(out.data(), (std::streamsize)out.size());
+            f.flush();
+            if (!f) { discard(); ::unlink(part.c_str()); why = "Could not write " + rel + " (stick full?)"; return false; }
+        }
+        pending.push_back({part, dest});
+    }
+    // Everything is unpacked and checked: put it in place, the app itself last.
+    std::stable_sort(pending.begin(), pending.end(), [](const Pending& a, const Pending& b) {
+        auto isApp = [](const Pending& x) { return x.dest.size() >= 16 && x.dest.compare(x.dest.size() - 16, 16, "comic-reader.elf") == 0; };
+        return !isApp(a) && isApp(b);
+    });
+    ::sync();
+    int done = 0;
+    for (const Pending& q : pending) {
+        if (::rename(q.part.c_str(), q.dest.c_str()) != 0) {
+            log("update: could not replace %s: %s", q.dest.c_str(), std::strerror(errno));
+            ::unlink(q.part.c_str());
+            continue;
+        }
+        ++done;
+        if (q.dest.size() >= 16 && q.dest.compare(q.dest.size() - 16, 16, "comic-reader.elf") == 0) ::chmod(q.dest.c_str(), 0755);
+    }
+    ::sync();
+    m_updated = done;
+    log("update: %d file(s) replaced, %zu unchanged", done, unchanged);
+    if (done < (int)pending.size()) { why = "Only " + std::to_string(done) + " of " + std::to_string(pending.size()) + " files could be replaced"; return false; }
+    return true;
+}

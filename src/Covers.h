@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Doc.h"
+#include "Library.h"
 
 #include <condition_variable>
 #include <cstdint>
@@ -20,6 +21,8 @@ constexpr int kCoverW = 720, kCoverH = 1080;  // the backglass shows it nearly f
 // The cover's pixels (RGBA), from the cache or drawn now (and cached). Slow on
 // a miss: call off the UI thread, with that thread's own context.
 bool load(cr_ctx* ctx, const std::string& appDir, const std::string& rel, std::vector<uint8_t>& out, int& w, int& h);
+// The book's ComicInfo.xml details, cached beside its cover (.info).
+Library::BookInfo info(cr_ctx* ctx, const std::string& appDir, const std::string& rel);
 
 }  // namespace Covers
 
@@ -33,6 +36,7 @@ public:
         std::vector<uint8_t> rgba;
         int w = 0, h = 0;
         bool ok = false;
+        Library::BookInfo info;
     };
 
     ~CoverLoader();
@@ -40,6 +44,7 @@ public:
     void request(const std::string& rel);  // ignored if already asked for
     bool take(Result& out);
     void forget(const std::string& rel);   // may be asked for again
+    void forgetAll();
 
 private:
     void worker();

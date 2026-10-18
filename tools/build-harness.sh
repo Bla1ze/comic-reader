@@ -11,5 +11,5 @@ for f in Library Covers Pages Transfer; do
   aarch64-linux-gnu-g++ -O2 -std=c++14 -c -I$APP/src -I$P/include $APP/src/$f.cpp
 done
 aarch64-linux-gnu-g++ -O2 -std=c++14 -c -I$APP/src -I$P/include $APP/tools/harness.cpp
-aarch64-linux-gnu-g++ -s -o $OUT/harness-bin *.o $P/lib/libmupdf.a $P/lib/libmupdf-third.a $P/lib/libarchive.a -lpthread -lm
+aarch64-linux-gnu-g++ -s -o $OUT/harness-bin *.o $P/lib/libmupdf.a $P/lib/libmupdf-third.a $P/lib/libarchive.a $P/lib/libwebpdecoder.a -lpthread -lm
 ls -la $OUT/harness-bin

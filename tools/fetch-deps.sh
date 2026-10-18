@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Downloads MuPDF and libarchive sources into <build folder>/comic-reader-deps/dl
+# Downloads MuPDF, libarchive and libwebp sources into <build folder>/comic-reader-deps/dl
 # and checks them against tools/deps.sha256. Run on the Mac before build-deps.sh.
 #   tools/fetch-deps.sh /Volumes/1TB/.agsdk-build
 set -eu
@@ -10,4 +10,5 @@ mkdir -p "$DL"
 cd "$DL"
 [ -f mupdf-1.28.5-source.tar.gz ] || curl -fLO https://mupdf.com/downloads/archive/mupdf-1.28.5-source.tar.gz
 [ -f libarchive-3.8.10.tar.xz ] || curl -fLO https://github.com/libarchive/libarchive/releases/download/v3.8.10/libarchive-3.8.10.tar.xz
+[ -f libwebp-1.6.0.tar.gz ] || curl -fLO https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.6.0.tar.gz
 shasum -a 256 -c "$HERE/deps.sha256"

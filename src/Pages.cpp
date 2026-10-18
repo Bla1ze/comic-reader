@@ -29,6 +29,7 @@ int PageRenderer::open(const std::string& path, int maxW, int maxH) {
     m_maxH = maxH;
     m_page = 0;
     m_have.clear();
+    m_hasDetail = false;
     m_error.clear();
     m_done.clear();
     m_pages = -1;
@@ -50,6 +51,18 @@ void PageRenderer::want(int page, const std::set<int>& have) {
     std::lock_guard<std::mutex> lock(m_mu);
     m_page = page;
     m_have = have;
+    m_cv.notify_one();
+}
+
+void PageRenderer::wantDetail(int page, float zoom, int x, int y, int w, int h) {
+    std::lock_guard<std::mutex> lock(m_mu);
+    m_detail.page = page;
+    m_detail.zoom = zoom;
+    m_detail.x = x;
+    m_detail.y = y;
+    m_detail.w = w;
+    m_detail.h = h;
+    m_hasDetail = true;
     m_cv.notify_one();
 }
 
@@ -85,6 +98,8 @@ void PageRenderer::worker() {
     for (;;) {
         std::string path;
         int gen, page, maxW, maxH;
+        Detail detail;
+        bool hasDetail = false;
         std::set<int> have;
         {
             std::unique_lock<std::mutex> lock(m_mu);
@@ -93,6 +108,7 @@ void PageRenderer::worker() {
                 if (m_path.empty()) return book != nullptr;  // close the book
                 if (m_gen.load() != bookGen) return true;    // open another
                 if (pages <= 0) return false;
+                if (m_hasDetail) return true;
                 for (int d = 0; d <= kAhead; ++d)
                     for (int s : {1, -1}) {
                         const int p = m_page + d * s;
@@ -102,6 +118,11 @@ void PageRenderer::worker() {
                 return false;
             });
             if (m_stop) break;
+            if (m_hasDetail && pages > 0 && m_gen.load() == bookGen && m_path == bookPath) {
+                detail = m_detail;
+                hasDetail = true;
+                m_hasDetail = false;
+            }
             path = m_path;
             gen = m_gen.load();
             page = m_page;
@@ -138,6 +159,27 @@ void PageRenderer::worker() {
             continue;
         }
         if (!book) continue;
+        if (hasDetail) {
+            Result r;
+            r.generation = gen;
+            r.page = detail.page;
+            r.detail = true;
+            r.zoom = detail.zoom;
+            auto t0 = std::chrono::steady_clock::now();
+            char err[256] = {0};
+            unsigned char* px = cr_render_region(book, detail.page, maxW, maxH, detail.zoom, detail.x, detail.y, detail.w,
+                                                 detail.h, &r.x, &r.y, &r.w, &r.h, err, sizeof(err));
+            r.ms = (long)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
+            if (px) {
+                r.rgba.assign(px, px + (size_t)r.w * r.h * 4);
+                std::free(px);
+            } else {
+                r.error = err;
+            }
+            std::lock_guard<std::mutex> lock(m_mu);
+            if (gen == m_gen.load()) m_done.push_back(std::move(r));
+            continue;
+        }
         // Pages the UI now holds needn't be remembered as sent.
         for (auto it = sent.begin(); it != sent.end();) {
             if (have.count(*it) || *it < page - kBehind || *it > page + kAhead) it = sent.erase(it);

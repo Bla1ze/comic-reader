@@ -325,6 +325,12 @@ void Panels::show(const Item& item) {
     m_cv.notify_one();
 }
 
+void Panels::refresh() {
+    m_lastKey.clear();  // UI thread's own: the next show() goes through
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_refresh = true;   // the worker resets its own state when it takes the job
+}
+
 void Panels::worker() {
     if (CpuPin::enabled()) CpuPin::pinSelf(CpuPin::groups().slow);
     cr_ctx* ctx = cr_ctx_new();
@@ -338,6 +344,11 @@ void Panels::worker() {
             if (m_stop) break;
             job = m_job;
             m_hasJob = false;
+            if (m_refresh) {
+                m_refresh = false;
+                m_lastCoverRel = "\x01";
+                m_shownBg = m_shownDmd = "\x01";
+            }
         }
         auto t0 = std::chrono::steady_clock::now();
         if (job.rel != m_lastCoverRel) {

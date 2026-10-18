@@ -7,6 +7,8 @@
 #include <unistd.h>
 
 #include <chrono>
+#include <fstream>
+#include <iterator>
 #include <cstdlib>
 #include <functional>
 #include <thread>
@@ -51,6 +53,26 @@ bool load(cr_ctx* ctx, const std::string& appDir, const std::string& rel, std::v
     return true;
 }
 
+Library::BookInfo info(cr_ctx* ctx, const std::string& appDir, const std::string& rel) {
+    std::string cache = Library::coverCachePath(appDir, rel);
+    cache = cache.substr(0, cache.size() - 4) + ".info";
+    std::ifstream in(cache);
+    if (in) {
+        std::string s((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        Library::BookInfo i = Library::decodeInfo(s);
+        if (i.known) return i;
+    }
+    Library::BookInfo i;
+    i.known = true;
+    if (char* xml = cr_comicinfo(ctx, (appDir + "/" + rel).c_str())) {
+        i = Library::parseComicInfo(xml);
+        std::free(xml);
+        log("comicinfo: %s -> %s", rel.c_str(), i.display().c_str());
+    }
+    std::ofstream(cache) << Library::encodeInfo(i);
+    return i;
+}
+
 }  // namespace Covers
 
 CoverLoader::~CoverLoader() {
@@ -90,6 +112,13 @@ void CoverLoader::forget(const std::string& rel) {
     m_asked.erase(rel);
 }
 
+void CoverLoader::forgetAll() {
+    std::lock_guard<std::mutex> lock(m_mu);
+    m_asked.clear();
+    m_queue.clear();
+    m_done.clear();
+}
+
 void CoverLoader::worker() {
     // Covers stay off the fast cores, which the page renderer uses.
     if (CpuPin::enabled()) CpuPin::pinSelf(CpuPin::groups().slow);
@@ -110,6 +139,7 @@ void CoverLoader::worker() {
         Result r;
         r.rel = rel;
         r.ok = Covers::load(ctx, m_appDir, rel, r.rgba, r.w, r.h);
+        if (!Library::isDirPath(m_appDir + "/" + rel)) r.info = Covers::info(ctx, m_appDir, rel);
         std::lock_guard<std::mutex> lock(m_mu);
         m_done.push_back(std::move(r));
     }

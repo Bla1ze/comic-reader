@@ -26,6 +26,12 @@ int cr_page_count(cr_book *book);
  * NULL on error. */
 unsigned char *cr_render(cr_book *book, int page, int maxW, int maxH, int *w, int *h, char *err, int errlen);
 
+/* Zoomed: the page is scaled to fit fitW x fitH, then by `zoom`; only the part
+ * at [x, y, w, h] of that (in its pixels) is drawn. The result may be smaller
+ * than w x h at the page's edges; its top-left is reported in outX / outY. */
+unsigned char *cr_render_region(cr_book *book, int page, int fitW, int fitH, float zoom, int x, int y, int w, int h,
+                                int *outX, int *outY, int *outW, int *outH, char *err, int errlen);
+
 /* Saves RGBA pixels as a JPEG (alpha dropped). 0 on success. */
 int cr_save_jpeg(cr_ctx *ctx, const unsigned char *rgba, int w, int h, const char *path, int quality);
 

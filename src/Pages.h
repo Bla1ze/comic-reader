@@ -22,6 +22,9 @@ public:
     struct Result {
         int generation = 0;  // the open() it belongs to
         int page = 0;
+        bool detail = false; // a zoomed part of the page (see wantDetail)
+        float zoom = 1.0f;
+        int x = 0, y = 0;    // detail: its place in the zoomed page
         std::vector<uint8_t> rgba;
         int w = 0, h = 0;
         std::string error;  // set if the page couldn't be drawn
@@ -35,6 +38,9 @@ public:
     void close();
     // The page on screen and the pages already held.
     void want(int page, const std::set<int>& have);
+    // Zoomed in: the part [x, y, w, h] of the page scaled to fit, times zoom.
+    // Drawn before anything read ahead; a newer request replaces one not started.
+    void wantDetail(int page, float zoom, int x, int y, int w, int h);
     bool take(Result& out);
 
     int pageCount() const { return m_pages.load(); }  // -1 while opening, -2 if it can't be opened
@@ -54,6 +60,9 @@ private:
     int m_maxW = 0, m_maxH = 0;
     int m_page = 0;
     std::set<int> m_have;
+    struct Detail { int page = 0; float zoom = 1.0f; int x = 0, y = 0, w = 0, h = 0; };
+    Detail m_detail;
+    bool m_hasDetail = false;
     std::string m_error;
 
     std::atomic<int> m_gen{0};

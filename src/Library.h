@@ -34,6 +34,7 @@ struct Entry {
 std::vector<Entry> list(const std::string& appDir, const std::string& dirRel);
 
 bool isBookFile(const std::string& name);  // by extension
+bool isDirPath(const std::string& p);
 std::string titleOf(const std::string& name);
 std::string lower(std::string s);
 
@@ -50,12 +51,42 @@ public:
     void set(const std::string& rel, int page, int pages);
     // Started and not finished, most recent first.
     std::vector<std::string> continueReading(size_t max) const;
+    void clear();  // forget every book's progress
 
 private:
     void save() const;
     std::string m_path;
     std::map<std::string, Progress> m_map;
 };
+
+// What a book's ComicInfo.xml says (the de facto comic tag file most comic
+// tools write into CBZ / CBR files). Empty fields weren't given.
+struct BookInfo {
+    std::string series, number, title, year, month, publisher, writer, artist, summary;
+    int pages = 0;
+    bool rtl = false;   // <Manga>YesAndRightToLeft</Manga>
+    bool known = false; // read (even if there was nothing to read)
+    // "Daredevil Comics #1", "Daredevil Battles Hitler", or "" if no series/title.
+    std::string display() const;
+};
+BookInfo parseComicInfo(const std::string& xml);
+std::string encodeInfo(const BookInfo& i);  // one field a line, for the cache
+BookInfo decodeInfo(const std::string& s);
+
+// data/settings.cfg: "key = value" lines.
+class Settings {
+public:
+    void load(const std::string& appDir);
+    std::string get(const std::string& key, const std::string& fallback) const;
+    void set(const std::string& key, const std::string& value);  // saves at once
+
+private:
+    std::string m_path;
+    std::map<std::string, std::string> m_map;
+};
+
+// Deletes every cached cover (they're drawn again as they're needed).
+int clearCovers(const std::string& appDir);
 
 // data/covers/<key>.jpg: the cover drawn once, keyed by the book's path, size
 // and date so a replaced file gets a new one.

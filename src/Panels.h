@@ -32,6 +32,7 @@ public:
     int init(const DisplayProfile::Topology& topology, const std::string& appDir);
     bool active() const { return !m_panels.empty(); }
     void show(const Item& item);
+    void refresh();  // covers were redrawn: draw the panels again
 
 private:
     struct Panel {
@@ -62,5 +63,5 @@ private:
     std::mutex m_mutex;
     std::condition_variable m_cv;
     Item m_job;
-    bool m_hasJob = false, m_stop = false;
+    bool m_hasJob = false, m_stop = false, m_refresh = false;
 };

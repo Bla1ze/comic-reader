@@ -1,0 +1,62 @@
+diff -ru a/source/cbz/mucbz.c b/source/cbz/mucbz.c
+--- a/source/cbz/mucbz.c	2026-10-18 03:08:50
++++ b/source/cbz/mucbz.c	2026-10-18 03:08:50
+@@ -49,6 +49,7 @@
+ 	".tif",
+ 	".tiff",
+ 	".wdp",
++	".webp", /* Comic Reader: decoded by the app */
+ 	NULL
+ };
+ 
+diff -ru a/source/cbz/muimg.c b/source/cbz/muimg.c
+--- a/source/cbz/muimg.c	2026-09-24 23:11:56
++++ b/source/cbz/muimg.c	2026-10-18 03:08:50
+@@ -288,6 +288,7 @@
+ 	"tif",
+ 	"tiff",
+ 	"wdp",
++	"webp", /* Comic Reader: decoded by the app */
+ 	NULL
+ };
+ 
+@@ -313,6 +314,7 @@
+ 	"image/x-portable-pixmap",
+ 	"image/x-portable-floatmap",
+ 	"image/x-tiff",
++	"image/webp",
+ 	NULL
+ };
+ 
+diff -ru a/source/fitz/image.c b/source/fitz/image.c
+--- a/source/fitz/image.c	2026-09-24 23:11:56
++++ b/source/fitz/image.c	2026-10-18 03:08:50
+@@ -1494,6 +1494,9 @@
+ 	return FZ_IMAGE_UNKNOWN;
+ }
+ 
++/* Comic Reader: WebP has no MuPDF decoder; the app supplies one (libwebp). */
++extern fz_pixmap *cr_decode_webp(fz_context *ctx, const unsigned char *data, size_t len) __attribute__((weak));
++
+ fz_image *
+ fz_new_image_from_buffer(fz_context *ctx, fz_buffer *buffer)
+ {
+@@ -1509,6 +1512,18 @@
+ 
+ 	if (len < 8)
+ 		fz_throw(ctx, FZ_ERROR_FORMAT, "unknown image file format");
++
++	if (len >= 12 && !memcmp(buf, "RIFF", 4) && !memcmp(buf + 8, "WEBP", 4) && cr_decode_webp)
++	{
++		fz_pixmap *pix = cr_decode_webp(ctx, buf, len);
++		fz_try(ctx)
++			image = fz_new_image_from_pixmap(ctx, pix, NULL);
++		fz_always(ctx)
++			fz_drop_pixmap(ctx, pix);
++		fz_catch(ctx)
++			fz_rethrow(ctx);
++		return image;
++	}
+ 
+ 	type = fz_recognize_image_format(ctx, buf);
+ 	bpc = 8;
