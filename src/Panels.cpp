@@ -28,7 +28,6 @@ constexpr uint8_t kInk[3] = {245, 246, 250};
 constexpr uint8_t kGold[3] = {245, 214, 95};
 constexpr uint8_t kTeal[3] = {43, 199, 184};
 constexpr uint8_t kViolet[3] = {124, 92, 232};
-constexpr uint8_t kMuted[3] = {154, 167, 189};
 constexpr uint8_t kGradTop[3] = {16, 30, 46};
 constexpr uint8_t kGradBot[3] = {30, 16, 50};
 
@@ -81,28 +80,6 @@ void text(std::vector<uint8_t>& c, int W, int H, const std::string& s, float x, 
     if (w > maxW && w > 0) { px *= maxW / w; w = maxW; }
     float left = align == 0 ? x : align == 1 ? x - w * 0.5f : x - w;
     PanelFont::draw(c.data(), W, H, s, left, top, px, col[0], col[1], col[2], face);
-}
-
-// Up to maxLines lines of s that fit maxW at px.
-std::vector<std::string> wrap(const std::string& s, float px, float maxW, int maxLines, PanelFont::Face face) {
-    std::vector<std::string> lines;
-    std::string line, word;
-    auto flush = [&](const std::string& w) {
-        std::string t = line.empty() ? w : line + " " + w;
-        if (!line.empty() && PanelFont::measure(t, px, face) > maxW) { lines.push_back(line); line = w; }
-        else line = t;
-    };
-    for (char ch : s) {
-        if (ch == ' ') { if (!word.empty()) flush(word); word.clear(); }
-        else word += ch;
-    }
-    if (!word.empty()) flush(word);
-    if (!line.empty()) lines.push_back(line);
-    if ((int)lines.size() > maxLines) {
-        lines.resize(maxLines);
-        lines.back() += "...";
-    }
-    return lines;
 }
 
 void bar(std::vector<uint8_t>& c, int W, int H, int x, int y, int w, int h, float f) {
@@ -363,8 +340,10 @@ void Panels::worker() {
             if (ctx && !job.rel.empty() && !Covers::load(ctx, m_appDir, job.rel, cover, cw, ch)) cover.clear();
         }
         // The backglass shows the book and how far in; the DMD the page.
-        const std::string bgKey = job.rel + "|" + job.title + "|" + job.subtitle + "|" + pageLine(job.page, job.pages);
-        const std::string dmdKey = bgKey + (job.reading ? "|r" : "|b");
+        // The backglass changes only with the cover; the DMD with the page too.
+        const std::string bgKey = job.rel.empty() ? "|" + job.title : job.rel;
+        const std::string dmdKey = job.rel + "|" + job.title + "|" + job.subtitle + "|" + pageLine(job.page, job.pages) +
+                                   (job.reading ? "|r" : "|b");
         for (Panel& p : m_panels) {
             if (p.dmd) {
                 if (dmdKey == m_shownDmd) continue;
@@ -397,29 +376,10 @@ void Panels::composeBackglass(Panel& p, const Item& item, const std::vector<uint
         text(c, W, H, pageLine(item.page, item.pages), W * 0.5f, H * 0.62f, H * 0.055f, kGold, PanelFont::Face::Body, W * 0.8f);
         return;
     }
+    // Just the cover, centered over a blurred copy of itself: the words are on the DMD.
     backdrop(c, W, H, cover, cw, ch);
-    // The cover on the left, as tall as the screen allows; the words to its right.
-    const int pad = (int)(H * 0.07f);
-    const int right = blitFit(c, W, H, cover, cw, ch, (int)(W * 0.06f), pad, (int)(W * 0.42f), H - 2 * pad, true);
-    const float tx = right + W * 0.05f, tw = W - tx - W * 0.06f;
-    float y = H * 0.24f;
-    if (!item.subtitle.empty()) {
-        text(c, W, H, item.subtitle, tx, y, H * 0.05f, kTeal, PanelFont::Face::Display, tw, 0);
-        y += H * 0.085f;
-    }
-    const float tpx = H * 0.11f;
-    for (const std::string& line : wrap(item.title, tpx, tw, 3, PanelFont::Face::Display)) {
-        text(c, W, H, line, tx, y, tpx, kInk, PanelFont::Face::Display, tw, 0);
-        y += tpx * 1.02f;
-    }
-    y += H * 0.03f;
-    if (item.pages > 0) {
-        text(c, W, H, pageLine(item.page, item.pages), tx, y, H * 0.05f, kGold, PanelFont::Face::Body, tw, 0);
-        y += H * 0.085f;
-        bar(c, W, H, (int)tx, (int)y, (int)std::min(tw, W * 0.4f), std::max(6, H / 90), (item.page + 1) / (float)item.pages);
-    } else if (!item.series) {
-        text(c, W, H, "Not started", tx, y, H * 0.045f, kMuted, PanelFont::Face::Body, tw, 0);
-    }
+    const int pad = (int)(H * 0.06f);
+    blitFit(c, W, H, cover, cw, ch, pad, pad, W - 2 * pad, H - 2 * pad, false);
 }
 
 void Panels::composeDmd(Panel& p, const Item& item) {

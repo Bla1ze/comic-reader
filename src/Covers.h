@@ -15,7 +15,7 @@
 // in data/covers/, so the library opens quickly the next time.
 namespace Covers {
 
-constexpr int kCoverW = 540, kCoverH = 810;
+constexpr int kCoverW = 720, kCoverH = 1080;  // the backglass shows it nearly full height
 
 // The cover's pixels (RGBA), from the cache or drawn now (and cached). Slow on
 // a miss: call off the UI thread, with that thread's own context.

@@ -227,7 +227,7 @@ void ProgressStore::save() const {
 
 std::string coverCachePath(const std::string& appDir, const std::string& rel) {
     struct stat st;
-    std::string key = rel;
+    std::string key = rel + "|720";  // the cover size: a change draws them again
     if (::stat((appDir + "/" + rel).c_str(), &st) == 0)
         key += "|" + std::to_string((long long)st.st_size) + "|" + std::to_string((long long)st.st_mtime);
     uint64_t h = 1469598103934665603ull;

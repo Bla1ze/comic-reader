@@ -13,11 +13,10 @@
 // The backglass and DMD, driven over KMS with SDL's own card0 fd (Retro
 // Launcher's GamePanels technique, from Jukebox's PanelOutput), while the app
 // owns the playfield:
-//   backglass: the book's cover over a blurred, darkened copy of itself, with
-//              its title, series and reading progress beside it;
+//   backglass: the book's cover over a blurred, darkened copy of itself;
 //   DMD:       the title, "Page 12 of 32" and a progress bar.
 // Composed on a worker thread (latest request wins). The backglass is redrawn
-// when the book or its page line changes, the DMD on every page turn.
+// only when the cover changes, the DMD on every page turn.
 class Panels {
 public:
     struct Item {
