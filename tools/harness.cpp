@@ -7,6 +7,7 @@
 #include "../src/Pages.h"
 #include "../src/Transfer.h"
 #include "../src/Update.h"
+#include "../src/Lookup.h"
 
 #include <unistd.h>
 
@@ -30,6 +31,24 @@ int main(int argc, char** argv) {
     Library::ensureFolders(app);
     Library::openLog(app);
     int fails = 0;
+
+    // harness <app> lookup "<name>" [tries]: Look up details, printing each match.
+    if (argc >= 4 && std::string(argv[2]) == "lookup") {
+        Lookup lk;
+        lk.start(app, "test", argv[3], "");
+        const int tries = argc >= 5 ? std::atoi(argv[4]) : 1;
+        for (int t = 0; t < tries; ++t) {
+            for (int i = 0; i < 1200 && lk.state() == Lookup::State::Searching; ++i)
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            if (lk.state() != Lookup::State::Found) { std::printf("  %d: %s\n", (int)lk.state(), lk.message().c_str()); break; }
+            const Library::BookInfo b = lk.result();
+            std::printf("  match: %s\n    %s | story: %s | %s %s/%s | %d pages\n    writer: %s | art: %s\n    %s\n",
+                        lk.match().c_str(), b.display().c_str(), b.title.c_str(), b.publisher.c_str(), b.month.c_str(),
+                        b.year.c_str(), b.pages, b.writer.c_str(), b.artist.c_str(), b.summary.substr(0, 220).c_str());
+            if (t + 1 < tries) lk.next();
+        }
+        return 0;
+    }
 
     // harness <app> update: check (COMIC_READER_RELEASES_FILE / _PRETEND_VERSION
     // steer it) and install, as Settings > Check for updates does.

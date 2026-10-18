@@ -66,6 +66,7 @@ struct BookInfo {
     int pages = 0;
     bool rtl = false;   // <Manga>YesAndRightToLeft</Manga>
     bool known = false; // read (even if there was nothing to read)
+    std::string source; // "gcd": looked up in the Grand Comics Database; "" = the book's ComicInfo.xml
     // "Daredevil Comics #1", "Daredevil Battles Hitler", or "" if no series/title.
     std::string display() const;
 };

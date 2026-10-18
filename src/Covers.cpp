@@ -53,9 +53,19 @@ bool load(cr_ctx* ctx, const std::string& appDir, const std::string& rel, std::v
     return true;
 }
 
+static std::string infoPath(const std::string& appDir, const std::string& rel) {
+    const std::string cache = Library::coverCachePath(appDir, rel);
+    return cache.substr(0, cache.size() - 4) + ".info";
+}
+
+void saveInfo(const std::string& appDir, const std::string& rel, const Library::BookInfo& info) {
+    const std::string path = infoPath(appDir, rel), tmp = path + ".tmp";
+    { std::ofstream(tmp) << Library::encodeInfo(info); }
+    std::rename(tmp.c_str(), path.c_str());
+}
+
 Library::BookInfo info(cr_ctx* ctx, const std::string& appDir, const std::string& rel) {
-    std::string cache = Library::coverCachePath(appDir, rel);
-    cache = cache.substr(0, cache.size() - 4) + ".info";
+    const std::string cache = infoPath(appDir, rel);
     std::ifstream in(cache);
     if (in) {
         std::string s((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());

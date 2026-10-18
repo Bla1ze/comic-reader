@@ -23,6 +23,8 @@ constexpr int kCoverW = 720, kCoverH = 1080;  // the backglass shows it nearly f
 bool load(cr_ctx* ctx, const std::string& appDir, const std::string& rel, std::vector<uint8_t>& out, int& w, int& h);
 // The book's ComicInfo.xml details, cached beside its cover (.info).
 Library::BookInfo info(cr_ctx* ctx, const std::string& appDir, const std::string& rel);
+// Keeps details found elsewhere (a lookup) in that cache.
+void saveInfo(const std::string& appDir, const std::string& rel, const Library::BookInfo& info);
 
 }  // namespace Covers
 

@@ -12,7 +12,10 @@ on the DMD.
   Settings. A folder of books is a series. Covers are drawn once and cached in
   `data/covers/`. Books with a `ComicInfo.xml` show their series, issue, story,
   date, publisher and credits (press Y), and manga marked right to left opens
-  that way.
+  that way. A book without one can be looked up in the Grand Comics Database
+  (X on its details card): the match is shown to keep or skip, and kept details
+  go in the app's cache, never into the book. comics.org rate-limits its free
+  API, so lookups are one at a time and answers are cached for 30 days.
 - **Zoom:** Start zooms to 2x, then 3x; the joystick moves around the page. A
   sharp copy of the part on screen is drawn in the background.
 - **Page turn:** a page curl (or a slide, or none).
@@ -32,7 +35,7 @@ on the DMD.
 | Joystick | Move | Left / right turn the page; zoomed in, it moves around |
 | A | Open | Next page |
 | Start | Open | Zoom: 2x, 3x, back to the whole page |
-| Y | The book's details | Zoom |
+| Y | The book's details (X there: look it up) | Zoom |
 | B | Back, or exit | Whole page (if zoomed), else back to the library |
 
 ## On the USB stick
@@ -63,7 +66,8 @@ page renderer and upload server (`tools/harness.cpp`) for any aarch64 Linux.
 
 ## License
 
-AGPL-3.0 (`LICENSE`), as MuPDF requires. The upload page links to this source.
+AGPL-3.0 (`LICENSE`), as MuPDF requires. Looked-up details come from the
+Grand Comics Database (comics.org), CC BY-SA 4.0. The upload page links to this source.
 Third-party notices are in `licenses/` and ship next to the ELF.
 
 Comic Reader ships no comics. The test set used in development is public-domain

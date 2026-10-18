@@ -321,7 +321,7 @@ std::string encodeInfo(const BookInfo& i) {
     auto one = [](std::string v) { for (char& c : v) if (c == '\n') c = ' '; return v; };
     return one(i.series) + "\n" + one(i.number) + "\n" + one(i.title) + "\n" + one(i.year) + "\n" + one(i.month) + "\n" +
            one(i.publisher) + "\n" + one(i.writer) + "\n" + one(i.artist) + "\n" + one(i.summary) + "\n" +
-           std::to_string(i.pages) + "\n" + (i.rtl ? "rtl" : "ltr") + "\n";
+           std::to_string(i.pages) + "\n" + (i.rtl ? "rtl" : "ltr") + "\n" + one(i.source) + "\n";
 }
 
 BookInfo decodeInfo(const std::string& s) {
@@ -339,6 +339,7 @@ BookInfo decodeInfo(const std::string& s) {
     i.publisher = f[5]; i.writer = f[6]; i.artist = f[7]; i.summary = f[8];
     i.pages = std::atoi(f[9].c_str());
     i.rtl = f[10] == "rtl";
+    if (f.size() > 11) i.source = f[11];
     i.known = true;
     return i;
 }

@@ -48,6 +48,7 @@ add_executable(${ATGAMES_APP_NAME}
     src/compat.c
     src/Gfx.cpp
     src/Library.cpp
+    src/Lookup.cpp
     src/Net.cpp
     src/Pages.cpp
     src/PanelFont.cpp

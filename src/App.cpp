@@ -7,6 +7,7 @@
 #include "DisplayProfile.h"
 #include "Gfx.h"
 #include "Library.h"
+#include "Lookup.h"
 #include "Pages.h"
 #include "Panels.h"
 #include "Theme.h"
@@ -171,6 +172,8 @@ private:
     std::map<std::string, Tex> m_coverTex;
     std::map<std::string, Library::BookInfo> m_info;  // ComicInfo details, as covers load
     bool m_details = false;                            // the details card is open
+    Lookup m_lookup;                                   // Look up details (X on the card)
+    bool m_lookupOn = false;                           // the card shows the lookup
     bool m_confirm = false;
     int m_confirmSel = 0;
     Confirm m_confirmKind = Confirm::Exit;
@@ -378,8 +381,33 @@ void App::handle(CE ce) {
         return;
     }
     if (m_details) {
+        const Library::Entry& e = m_items[(size_t)m_sel];
+        if (m_lookupOn) {
+            const Lookup::State ls = m_lookup.state();
+            if (ce == CE::B || ce == CE::Back || ce == CE::Guide) { m_lookup.stop(); m_lookupOn = false; }
+            else if ((ce == CE::A || ce == CE::Start) && ls == Lookup::State::Found) {
+                const Library::BookInfo found = m_lookup.result();
+                Covers::saveInfo(m_appDir, e.rel, found);
+                m_info[e.rel] = found;
+                m_lookupOn = false;
+                log("lookup: kept %s for %s", found.display().c_str(), e.rel.c_str());
+                toast("Details kept");
+                if (m_panels) m_panels->refresh();
+            } else if (ce == CE::X && ls == Lookup::State::Found) m_lookup.next();
+            else if (ce == CE::X && (ls == Lookup::State::NotFound || ls == Lookup::State::Failed)) {
+                m_lookup.start(m_appDir, e.rel, e.title, Library::titleOf(e.rel.substr(0, e.rel.find_last_of('/'))));
+            }
+            return;
+        }
         if (ce == CE::B || ce == CE::Back || ce == CE::Y || ce == CE::Guide) m_details = false;
         else if (ce == CE::A || ce == CE::Start) { m_details = false; openSelected(); }
+        else if (ce == CE::X) {
+            // The name from the file (e.title), not the ComicInfo name; its folder helps when the name is just a number.
+            const size_t slash = e.rel.find_last_of('/'), prev = e.rel.find_last_of('/', slash - 1);
+            const std::string folder = prev == std::string::npos ? "" : Library::titleOf(e.rel.substr(prev + 1, slash - prev - 1));
+            m_lookup.start(m_appDir, e.rel, e.title, folder);
+            m_lookupOn = true;
+        }
         return;
     }
     if (ce == CE::Y && m_tab != kSettings && !m_items.empty() && !m_items[(size_t)m_sel].series) {
@@ -461,6 +489,7 @@ void App::pollHeld(float dt) {
 
 void App::setTab(int tab) {
     m_details = false;
+    if (m_lookupOn) { m_lookup.stop(); m_lookupOn = false; }
     if (m_tab == kSettings && tab != kSettings) {
         if (m_setView == SetView::Upload) {
             const int got = m_transfer.status().received;
@@ -985,7 +1014,11 @@ void App::renderLibrary() {
         else if (m_setView == SetView::Updates && m_updater.state() == Updater::State::Available) hints = "A Install   B Back";
         else hints = "B Back";
     } else if (m_items.empty()) hints = "LB/RB Shelves   B Exit";
-    else if (m_details) hints = "A Read   B Close";
+    else if (m_details && m_lookupOn) {
+        const Lookup::State ls = m_lookup.state();
+        hints = ls == Lookup::State::Found ? "A Keep   X Next match   B Discard"
+              : ls == Lookup::State::Searching ? "B Stop" : "X Try again   B Back";
+    } else if (m_details) hints = "A Read   X Look up   B Close";
     else hints = std::string("A Read   Y Details   LB/RB Shelves   ") + (m_dir != shelfDir() && m_tab != kContinue ? "B Back" : "B Exit");
     Theme::footerHints(r, hints);
 }
@@ -1160,11 +1193,13 @@ void App::renderDetails() {
         }
     }
     auto it = m_info.find(e.rel);
-    const Library::BookInfo info = it == m_info.end() ? Library::BookInfo() : it->second;
+    const Lookup::State ls = m_lookup.state();
+    const bool preview = m_lookupOn && ls == Lookup::State::Found;
+    const Library::BookInfo info = preview ? m_lookup.result() : it == m_info.end() ? Library::BookInfo() : it->second;
     const float tx = cv.x + cv.w + 28.0f, tw = card.x + card.w - 26.0f - tx;
     float y = cv.y + 4.0f;
     // The name, lettered, two lines at most.
-    const std::string name = Theme::upper(nameOf(e));
+    const std::string name = Theme::upper(preview ? info.display() : nameOf(e));
     std::vector<std::string> nl;
     {
         std::string cur, word;
@@ -1204,13 +1239,32 @@ void App::renderDetails() {
     // The summary under it all, or the file when there's nothing else to say.
     y = std::max(y, cv.y + cv.h + 30.0f);
     const std::string body = !info.summary.empty() ? info.summary
-                           : info.series.empty() && info.title.empty() ? "No ComicInfo.xml in this book. File: " + e.rel : "";
+                           : info.series.empty() && info.title.empty()
+                               ? "No details in this book (no ComicInfo.xml). Press X to look it up in the Grand Comics Database. File: " + e.rel
+                               : "";
     if (!body.empty()) {
         for (const std::string& l : noteLines(r, body, card.w - 52.0f, Theme::Type::Small)) {
-            if (y > card.y + card.h - 44.0f) break;
+            if (y > card.y + card.h - (m_lookupOn ? 170.0f : 70.0f)) break;
             AppFont::draw(r, l, card.x + 26.0f, y, Theme::Type::Small, Theme::Ink);
             y += 34.0f;
         }
+    }
+    // Where the details came from.
+    if (info.source == "gcd")
+        AppFont::drawCentered(r, "Details from the Grand Comics Database (comics.org), CC BY-SA 4.0", kW * 0.5f,
+                              card.y + card.h - 40.0f, 18.0f, Theme::Muted);
+    // The lookup: what it's doing, or the match it found to keep or skip.
+    if (m_lookupOn) {
+        const FRect box{card.x + 20.0f, card.y + card.h - 150.0f, card.w - 40.0f, 96.0f};
+        Theme::inkBox(r, box, preview ? Theme::Yellow : Theme::White, 3.0f, 4.0f);
+        std::string top, bottom;
+        if (ls == Lookup::State::Searching) { top = "LOOKING UP..."; bottom = m_lookup.message(); }
+        else if (preview) { top = "IS THIS IT?"; bottom = m_lookup.match(); }
+        else if (ls == Lookup::State::NotFound) { top = "NOT FOUND"; bottom = m_lookup.message(); }
+        else { top = "COULDN'T LOOK IT UP"; bottom = m_lookup.message(); }
+        AppFont::draw(r, top, box.x + 20.0f, box.y + 12.0f, 32.0f, preview ? Theme::Ink : Theme::Red, D);
+        AppFont::draw(r, Theme::ellipsize(r, bottom, box.w - 40.0f, Theme::Type::Small), box.x + 20.0f, box.y + 54.0f,
+                      Theme::Type::Small, Theme::Ink);
     }
     if (info.rtl) Theme::burst(r, card.x + card.w - 60.0f, card.y + 20.0f, 60.0f, 10.0, Theme::Yellow, {0, 0, 0, 0}),
                   Theme::letterCentered(r, "R TO L", card.x + card.w - 60.0f, card.y + 6.0f, 24.0f, Theme::Red, 2.0f);
@@ -1351,10 +1405,12 @@ void App::renderAbout() {
         "Free software: GNU AGPL 3.0. The source code is at",
         "github.com/Bla1ze/comic-reader",
         "",
-        "It uses MuPDF (Artifex, AGPL 3.0) and libarchive,",
+        "It uses MuPDF (Artifex, AGPL 3.0), libarchive and libwebp,",
         "with FreeType, libjpeg (the Independent JPEG Group),",
         "Little CMS, zlib, jbig2dec and OpenJPEG.",
         "Lettering: Bangers and Comic Neue (SIL OFL).",
+        "Looked-up details: the Grand Comics Database",
+        "(comics.org), CC BY-SA 4.0.",
         "Controls and display code based on the AtGames",
         "External Applications SDK.",
         "",
