@@ -79,6 +79,8 @@ zips (the guide goes in the app zip's `manuals/`, so it's preloaded).
 `tools/shots.sh <sample library>` takes the screenshots in `docs/images/` in the
 SDK's Mac simulator; the guide (`docs/guide.html`, printed to PDF with headless
 Chrome) and the website (`docs/index.html`, GitHub Pages from `docs/`) use them.
+The link preview image `docs/og.jpg` is `docs/og.html` rendered by headless Chrome
+at 1200 x 630.
 
 `tools/build-harness.sh` builds an off-cabinet test of the library, covers,
 page renderer and upload server (`tools/harness.cpp`) for any aarch64 Linux.
