@@ -1,0 +1,52 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- The app's menu art (comic-reader.png, 1024 x 1536), rendered with
+     tools/make-icon.sh. Open book: Material Symbols "auto_stories" (Apache-2.0). -->
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=block" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@48,500,1,0&display=block" rel="stylesheet">
+<style>
+html, body { margin: 0; width: 1024px; height: 1536px; overflow: hidden; background: #0a0d18; }
+.art { position: relative; width: 1024px; height: 1536px; overflow: hidden;
+  background:
+    radial-gradient(700px 600px at 15% 8%, rgba(43,199,184,.35), transparent 70%),
+    radial-gradient(800px 700px at 95% 92%, rgba(124,92,232,.45), transparent 70%),
+    #0a0d18; }
+/* Halftone dots, fading out toward the middle. */
+.dots { position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,.13) 3.2px, transparent 4px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 42%, transparent 35%, #000 85%); }
+/* Action lines behind the bubble. */
+.burst { position: absolute; left: 512px; top: 610px; width: 0; height: 0; }
+.burst i { position: absolute; left: 0; top: -3px; width: 760px; height: 6px; transform-origin: 0 50%;
+  background: linear-gradient(90deg, rgba(43,199,184,.0) 30%, rgba(43,199,184,.35) 60%, rgba(124,92,232,0)); }
+.bubble { position: absolute; left: 152px; top: 300px; width: 720px; height: 560px; }
+.bubble svg { position: absolute; inset: 0; filter: drop-shadow(0 0 40px rgba(43,199,184,.55)) drop-shadow(0 30px 40px rgba(0,0,0,.6)); }
+.book { position: absolute; left: 0; right: 0; top: 92px; text-align: center;
+  font-family: 'Material Symbols Rounded'; font-size: 330px; line-height: 1; color: #0d1222;
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'opsz' 48; }
+.title { position: absolute; left: 0; right: 0; top: 960px; text-align: center; font-family: 'Bebas Neue', sans-serif; }
+.title .a { font-size: 300px; line-height: .86; color: #f4f6fb; letter-spacing: 8px;
+  text-shadow: 0 0 30px rgba(43,199,184,.45), 10px 10px 0 #7c5ce8; }
+.title .b { font-size: 190px; line-height: 1; letter-spacing: 34px; padding-left: 34px; color: transparent;
+  -webkit-text-stroke: 5px #2bc7b8; text-shadow: 0 0 26px rgba(43,199,184,.5); }
+</style></head><body>
+<div class="art">
+  <div class="dots"></div>
+  <div class="burst" id="burst"></div>
+  <div class="bubble">
+    <svg viewBox="0 0 720 560">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dfe6f5"/></linearGradient></defs>
+      <path d="M360 30 C565 30 690 130 690 255 C690 380 565 470 380 478 L250 545 L278 466 C130 440 30 355 30 255 C30 130 155 30 360 30 Z"
+            fill="url(#g)" stroke="#0d1222" stroke-width="14" stroke-linejoin="round"/>
+    </svg>
+    <div class="book">auto_stories</div>
+  </div>
+  <div class="title"><div class="a">COMIC</div><div class="b">READER</div></div>
+</div>
+<script>
+  const b = document.getElementById('burst');
+  for (let i = 0; i < 28; i++) { const l = document.createElement('i'); l.style.transform = `rotate(${i * 360 / 28 + 4}deg)`; b.appendChild(l); }
+</script>
+</body></html>

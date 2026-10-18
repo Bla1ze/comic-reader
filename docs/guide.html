@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Comic Reader Guide</title>
+<style>
+@page { size: 6.75in 10.25in; margin: 0; }
+* { box-sizing: border-box; }
+body { margin: 0; font: 15px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif; color: #e9edf6; background: #0b0f1a; }
+.page { width: 6.75in; height: 10.25in; padding: 0.6in 0.6in 0.5in; page-break-after: always; position: relative; overflow: hidden;
+  background: radial-gradient(5in 4in at 10% 0%, rgba(43,199,184,.22), transparent 70%),
+              radial-gradient(5in 4in at 100% 100%, rgba(124,92,232,.28), transparent 70%), #0b0f1a; }
+.page:last-child { page-break-after: auto; }
+.cover { display: flex; flex-direction: column; justify-content: center; text-align: center; }
+.kicker { letter-spacing: .3em; text-transform: uppercase; color: #2bc7b8; font-size: 13px; font-weight: 700; }
+h1 { font-size: 64px; line-height: .95; margin: 14px 0 18px; letter-spacing: .02em; text-transform: uppercase; font-weight: 800; }
+h1 span { color: #2bc7b8; }
+.lead { color: #c3cadb; font-size: 18px; max-width: 4.4in; margin: 0 auto; }
+.screens { display: flex; gap: 14px; justify-content: center; margin-top: 40px; }
+.screen { border: 2px solid rgba(255,255,255,.18); border-radius: 10px; padding: 10px 12px; font-size: 12px; color: #c3cadb; width: 1.6in; }
+.screen b { display: block; color: #f5d65f; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+h2 { font-size: 26px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .04em; }
+h2 small { display: block; font-size: 12px; color: #2bc7b8; letter-spacing: .3em; margin-bottom: 4px; }
+.rule { height: 3px; width: 70px; background: linear-gradient(90deg, #2bc7b8, #7c5ce8); border-radius: 2px; margin: 10px 0 18px; }
+table { width: 100%; border-collapse: collapse; margin: 6px 0 22px; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid rgba(255,255,255,.12); vertical-align: top; }
+th { color: #9aa7bd; font-size: 11px; letter-spacing: .15em; text-transform: uppercase; }
+td:first-child { color: #f5d65f; font-weight: 700; white-space: nowrap; }
+.card { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 14px 16px; margin: 0 0 14px; }
+.card b { color: #2bc7b8; }
+ol { padding-left: 20px; margin: 6px 0 18px; } li { margin: 6px 0; }
+code { font: 13px/1.4 Menlo, monospace; color: #f5d65f; }
+.foot { position: absolute; left: .6in; right: .6in; bottom: .35in; font-size: 11px; color: #6b7590; display: flex; justify-content: space-between; }
+</style></head><body>
+
+<section class="page cover">
+  <div class="kicker">Comic Reader</div>
+  <h1>The <span>Guide</span></h1>
+  <p class="lead">Comics and manuals on your cabinet. Pages on the playfield, the cover on the backglass, where you are on the DMD.</p>
+  <div class="screens">
+    <div class="screen"><b>Playfield</b>Your library, and the page you're reading at full resolution.</div>
+    <div class="screen"><b>Backglass</b>The book's cover.</div>
+    <div class="screen"><b>DMD</b>The title and the page number.</div>
+  </div>
+  <div class="foot"><span>Version 0.1</span><span>Turn the page with the right flipper</span></div>
+</section>
+
+<section class="page">
+  <h2><small>Getting around</small>Controls</h2>
+  <div class="rule"></div>
+  <table>
+    <tr><th>Button</th><th>In the library</th><th>While reading</th></tr>
+    <tr><td>Flippers</td><td>Previous or next shelf</td><td>Previous or next page. Hold to flip fast.</td></tr>
+    <tr><td>Joystick</td><td>Move between books</td><td>Left and right turn the page</td></tr>
+    <tr><td>A</td><td>Open the book or series</td><td>Next page</td></tr>
+    <tr><td>Start</td><td>Open</td><td>Show the title and page number</td></tr>
+    <tr><td>B</td><td>Back, or exit the app</td><td>Back to the library</td></tr>
+  </table>
+  <h2><small>Your books</small>Shelves</h2>
+  <div class="rule"></div>
+  <div class="card"><b>Continue</b> lists the books you're partway through. A book always opens on the page where you stopped.</div>
+  <div class="card"><b>Comics</b> and <b>Manuals</b> hold your books. A folder of books shows as a series: open it to see the issues.</div>
+  <div class="card"><b>Wi-Fi upload</b> lets you send books from a phone or computer (next page).</div>
+  <div class="foot"><span>Comic Reader Guide</span><span>2</span></div>
+</section>
+
+<section class="page">
+  <h2><small>Adding books</small>Wi-Fi upload</h2>
+  <div class="rule"></div>
+  <ol>
+    <li>Go to the <b>Wi-Fi upload</b> shelf. The cabinet shows an address and a four-digit PIN.</li>
+    <li>On a phone or computer on the same network, open the address in a browser and enter the PIN.</li>
+    <li>Choose <b>Comics</b> or <b>Manuals</b>, and a series if you like (or make a new one).</li>
+    <li>Drop in your files, or a folder of page pictures. Leave the shelf when they're sent: they're in your library.</li>
+  </ol>
+  <h2><small>Or copy them</small>On the USB stick</h2>
+  <div class="rule"></div>
+  <div class="card">Put books in <code>external/comic-reader/comics/</code> or <code>manuals/</code>. A folder inside makes a series:<br>
+    <code>comics/Planet Comics/Planet Comics 037.cbr</code></div>
+  <h2><small>What it opens</small>File types</h2>
+  <div class="rule"></div>
+  <div class="card"><b>PDF</b>, <b>CBZ</b>, <b>CBR</b> and <b>CBT</b> comics, single pictures (JPG, PNG, GIF, BMP, TIFF), and a folder of pictures as one book, its pages in name order.</div>
+  <div class="foot"><span>Comic Reader Guide</span><span>3</span></div>
+</section>
+
+</body></html>

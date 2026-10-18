@@ -11,6 +11,8 @@ It includes:
     (Independent JPEG Group; "this software is based in part on the work of
     the Independent JPEG Group"), Little CMS (MIT), zlib, jbig2dec (AGPL-3.0),
     OpenJPEG (BSD 2-clause).
+  The app's menu art uses the "auto_stories" symbol from Google's Material
+    Symbols (Apache-2.0).
   Fonts: URW base-35 (Nimbus) and Noto / SIL fonts bundled in MuPDF, Noto
     Sans, Bebas Neue, VT323 and Press Start 2P, all under the SIL Open Font
     License.
