@@ -59,6 +59,8 @@ shot zoom      "5:Return 1:Return 2:e 2.5:s"          14   p
 shot curl      "5:Return 1:Return 2.5:e"              11   p   COMIC_READER_TURN_HOLD=0.2
 shot manuals   "5:e"                                  7.5  p
 shot settings  "5:e 0.5:e 1:Down 0.5:Down"            9    p
+# Attract mode after 3 idle seconds; its first page turn comes 10 s later.
+shot attract   ""                                     17   p   COMIC_READER_ATTRACT_AFTER=3
 # Looks Jumbo Comics #82 up in the Grand Comics Database (online; comics.org
 # rate-limits its API, so run this one on its own: tools/shots.sh <lib> lookup).
 [ -n "$ONLY" ] && shot lookup "5:Return 1:y 1:x"      25   p

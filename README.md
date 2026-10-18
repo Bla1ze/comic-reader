@@ -4,11 +4,20 @@
 
 ![The library on the playfield](docs/images/library.jpg)
 
+## New in 0.2
+
+Zoom and pan, a page-curl page turn, book details from ComicInfo.xml (and looked up
+in the Grand Comics Database when a book has none), WebP pages, a Settings shelf,
+updates from GitHub, and an **attract mode**: left alone, comics read themselves.
+
 Comics and manuals on an AtGames Legends pinball cabinet (4KP, HDP). Pages on
 the playfield, at the screen's full resolution (2160 x 3840 on a 4KP); the
 book's cover over a blur of itself on the backglass; the title and page number
 on the DMD.
 
+- **Attract mode:** left alone in the library for 5 minutes (or 10, or never), a
+  random comic reads itself, a page every 10 seconds; any button stops it. It
+  isn't saved as reading, so Continue doesn't change.
 - **Formats:** PDF, CBZ, CBR (RAR), CBT, single pictures (JPG, PNG, WebP, GIF,
   BMP, TIFF), and a folder of pictures as one book (pages in name order). WebP
   pages inside CBZ / CBR work too.
@@ -30,9 +39,6 @@ on the DMD.
   updates (from this repo's releases; your books and places are kept), Page turn,
   Reading direction (right to left for manga), Attract mode, Forget reading
   history, Redraw covers, About.
-- **Attract mode:** after 5 idle minutes in the library (or 10, or off), a random
-  comic reads itself at a page every 10 seconds; any button stops it. It isn't
-  saved as reading, so Continue doesn't change.
 
 ## Controls
 
