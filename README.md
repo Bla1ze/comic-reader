@@ -1,5 +1,9 @@
 # Comic Reader
 
+**Website: https://bla1ze.github.io/comic-reader/** · [The guide (PDF)](docs/Comic%20Reader%20Guide.pdf) · [Download](https://github.com/Bla1ze/comic-reader/releases/latest)
+
+![The library on the playfield](docs/images/library.jpg)
+
 Comics and manuals on an AtGames Legends pinball cabinet (4KP, HDP). Pages on
 the playfield, at the screen's full resolution (2160 x 3840 on a 4KP); the
 book's cover over a blur of itself on the backglass; the title and page number
@@ -60,6 +64,12 @@ docker run --rm --platform linux/amd64 -v <build folder>:/workspace \
 docker run --rm --platform linux/amd64 -v <build folder>:/workspace \
   atgames-external-sdk:glibc-2.26-sdl2-v1 /workspace/scripts/build-app.sh comic-reader
 ```
+
+`tools/make-release.sh <version> <elf> <out> [sample library]` makes the release
+zips (the guide goes in the app zip's `manuals/`, so it's preloaded).
+`tools/shots.sh <sample library>` takes the screenshots in `docs/images/` in the
+SDK's Mac simulator; the guide (`docs/guide.html`, printed to PDF with headless
+Chrome) and the website (`docs/index.html`, GitHub Pages from `docs/`) use them.
 
 `tools/build-harness.sh` builds an off-cabinet test of the library, covers,
 page renderer and upload server (`tools/harness.cpp`) for any aarch64 Linux.

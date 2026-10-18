@@ -72,7 +72,7 @@ const char* kReadme =
     "A folder of books becomes a series, one level deep:\n"
     "  comics/Jumbo Comics/Jumbo Comics 082.cbr\n"
     "\n"
-    "Or send them from a phone or computer: Wi-Fi upload in Comic Reader.\n";
+    "Or send them from a phone or computer: Settings > Wi-Fi upload in Comic Reader.\n";
 
 }  // namespace
 

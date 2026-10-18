@@ -5,86 +5,154 @@
 <style>
 @page { size: 6.75in 10.25in; margin: 0; }
 * { box-sizing: border-box; }
-body { margin: 0; font: 700 15px/1.5 'Comic Neue', 'Comic Sans MS', sans-serif; color: #181412; }
-.page { width: 6.75in; height: 10.25in; padding: 0.55in 0.55in 0.5in; page-break-after: always; position: relative; overflow: hidden;
+body { margin: 0; font: 700 14px/1.45 'Comic Neue', 'Comic Sans MS', sans-serif; color: #181412; }
+.page { width: 6.75in; height: 10.25in; padding: 0.5in 0.5in 0.45in; page-break-after: always; position: relative; overflow: hidden;
   background: radial-gradient(circle, #e2cca0 2.4px, transparent 3px) 0 0/13px 13px, #f4e8c8; }
 .page:last-child { page-break-after: auto; }
-.cover { display: flex; flex-direction: column; justify-content: center; text-align: center;
+.cover { text-align: center; padding-top: 0.45in;
   background: radial-gradient(circle, #b0161e 4px, transparent 4.8px) 0 0/18px 18px, #d6242a; }
-.bang, h1, h2, th, td:first-child, .screen b, .kicker { font-family: Bangers, Impact, sans-serif; font-weight: 400; letter-spacing: .05em; }
-.kicker { display: inline-block; margin: 0 auto; background: #fffbf0; border: 3px solid #181412; box-shadow: 4px 4px 0 #181412; padding: 6px 16px; font-size: 20px; }
-h1 { font-size: 92px; line-height: .9; margin: 22px 0 22px; color: #ffd426;
+.bang, h1, h2, h3, th, td:first-child, .kicker, .cap b { font-family: Bangers, Impact, sans-serif; font-weight: 400; letter-spacing: .05em; }
+.kicker { display: inline-block; background: #fffbf0; border: 3px solid #181412; box-shadow: 4px 4px 0 #181412; padding: 6px 16px; font-size: 20px; }
+h1 { font-size: 84px; line-height: .9; margin: 18px 0 16px; color: #ffd426;
   text-shadow: -4px -4px 0 #181412, 4px -4px 0 #181412, -4px 4px 0 #181412, 4px 4px 0 #181412, 8px 8px 0 #181412; }
 h1 span { color: #fffbf0; }
-.lead { background: #fffbf0; border: 4px solid #181412; box-shadow: 6px 6px 0 #181412; font-size: 17px; max-width: 4.6in; margin: 0 auto; padding: 14px 18px; }
-.screens { display: flex; gap: 14px; justify-content: center; margin-top: 34px; }
-.screen { background: #ffd426; border: 3px solid #181412; box-shadow: 4px 4px 0 #181412; padding: 10px 12px; font-size: 12px; width: 1.6in; }
-.screen b { display: block; color: #d6242a; font-size: 20px; margin-bottom: 4px; }
-h2 { font-size: 40px; margin: 0 0 4px; color: #d6242a; text-shadow: 2px 2px 0 #181412; }
-h2 small { display: inline-block; font-size: 16px; color: #181412; background: #ffd426; border: 2px solid #181412; padding: 2px 10px; margin-bottom: 8px; text-shadow: none; }
-.rule { display: none; }
-table { width: 100%; border-collapse: collapse; margin: 8px 0 24px; background: #fffbf0; border: 3px solid #181412; box-shadow: 5px 5px 0 #181412; }
-th, td { text-align: left; padding: 8px 10px; border-bottom: 2px solid #181412; vertical-align: top; }
-th { font-size: 17px; background: #ffd426; }
-td:first-child { color: #d6242a; font-size: 20px; white-space: nowrap; }
-.card { background: #fffbf0; border: 3px solid #181412; box-shadow: 5px 5px 0 #181412; padding: 12px 16px; margin: 0 0 16px; }
+.lead { background: #fffbf0; border: 4px solid #181412; box-shadow: 6px 6px 0 #181412; font-size: 15px; max-width: 4.9in; margin: 0 auto; padding: 10px 16px; }
+.screens { display: flex; gap: 14px; justify-content: center; align-items: flex-start; margin-top: 22px; }
+.shot { border: 4px solid #181412; box-shadow: 6px 6px 0 #181412; background: #181412; display: block; }
+.cap { font-size: 12px; margin-top: 8px; text-align: center; }
+.cap b { display: block; font-size: 17px; color: #d6242a; }
+.cover .cap { color: #fffbf0; }
+.cover .cap b { color: #ffd426; }
+h2 { font-size: 38px; margin: 0 0 4px; color: #d6242a; text-shadow: 2px 2px 0 #181412; line-height: 1; }
+h2 small { display: inline-block; font-size: 15px; color: #181412; background: #ffd426; border: 2px solid #181412; padding: 2px 10px; margin: 0 10px 8px 0; text-shadow: none; vertical-align: middle; }
+h3 { font-size: 22px; margin: 0 0 2px; color: #1e56a8; }
+table { width: 100%; border-collapse: collapse; margin: 6px 0 18px; background: #fffbf0; border: 3px solid #181412; box-shadow: 5px 5px 0 #181412; }
+th, td { text-align: left; padding: 7px 9px; border-bottom: 2px solid #181412; vertical-align: top; font-size: 13px; }
+th { font-size: 16px; background: #ffd426; }
+td:first-child { color: #d6242a; font-size: 18px; white-space: nowrap; }
+.card { background: #fffbf0; border: 3px solid #181412; box-shadow: 5px 5px 0 #181412; padding: 10px 14px; margin: 0 0 12px; }
 .card b { color: #1e56a8; }
-ol { padding-left: 22px; margin: 6px 0 20px; background: #fffbf0; border: 3px solid #181412; box-shadow: 5px 5px 0 #181412; padding: 12px 16px 12px 40px; }
-li { margin: 6px 0; }
-code { font: 13px/1.4 Menlo, monospace; color: #d6242a; }
-.foot { position: absolute; left: .55in; right: .55in; bottom: .3in; font-size: 12px; color: #705c42; display: flex; justify-content: space-between; }
+.row { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
+.row .text { flex: 1; }
+.trio { display: flex; gap: 14px; justify-content: space-between; margin: 8px 0 16px; }
+.trio > div { width: 1.75in; }
+ol { margin: 4px 0 14px; background: #fffbf0; border: 3px solid #181412; box-shadow: 5px 5px 0 #181412; padding: 10px 14px 10px 34px; }
+li { margin: 4px 0; }
+code { font: 12px/1.4 Menlo, monospace; color: #d6242a; }
+.small { font-size: 11px; color: #705c42; }
+.foot { position: absolute; left: .5in; right: .5in; bottom: .25in; font-size: 11px; color: #705c42; display: flex; justify-content: space-between; }
 .cover .foot { color: #ffd426; }
 </style></head><body>
 
 <section class="page cover">
-  <div><span class="kicker">Comic Reader</span></div>
+  <span class="kicker">Comic Reader 0.2</span>
   <h1>The <span>Guide!</span></h1>
   <p class="lead">Comics and manuals on your cabinet. Pages on the playfield, the cover on the backglass, where you are on the DMD.</p>
   <div class="screens">
-    <div class="screen"><b>Playfield</b>Your library, and the page you're reading at full resolution.</div>
-    <div class="screen"><b>Backglass</b>The book's cover.</div>
-    <div class="screen"><b>DMD</b>The title and the page number.</div>
+    <div><img class="shot" src="images/library.jpg" style="width:1.95in"><div class="cap"><b>Playfield</b>Your library, then the pages.</div></div>
+    <div style="width:2.7in">
+      <img class="shot" src="images/reader-backglass.jpg" style="width:2.7in"><div class="cap"><b>Backglass</b>The book's cover.</div>
+      <img class="shot" src="images/reader-dmd.jpg" style="width:2.7in;margin-top:14px"><div class="cap"><b>DMD</b>The title and the page you're on.</div>
+    </div>
   </div>
-  <div class="foot"><span>Version 0.2</span><span>Turn the page with the right flipper</span></div>
+  <div class="foot"><span>Free software (AGPL-3.0): github.com/Bla1ze/comic-reader</span><span>Turn the page with the right flipper</span></div>
 </section>
 
 <section class="page">
   <h2><small>Getting around</small>Controls</h2>
-  <div class="rule"></div>
   <table>
     <tr><th>Button</th><th>In the library</th><th>While reading</th></tr>
     <tr><td>Flippers</td><td>Previous or next shelf</td><td>Previous or next page. Hold to flip fast.</td></tr>
     <tr><td>Joystick</td><td>Move between books</td><td>Turn the page; zoomed in, move around it</td></tr>
     <tr><td>A</td><td>Open the book or series</td><td>Next page</td></tr>
-    <tr><td>Start</td><td>Open</td><td>Zoom in: 2x, 3x, then the whole page</td></tr>
-    <tr><td>Y</td><td>The book's details</td><td>Zoom in</td></tr>
+    <tr><td>Start</td><td>Open</td><td>Zoom: 2x, 3x, then the whole page</td></tr>
+    <tr><td>Y</td><td>The book's details</td><td>Zoom</td></tr>
+    <tr><td>X</td><td>(on the details) Look it up</td><td>Previous page</td></tr>
     <tr><td>B</td><td>Back, or exit the app</td><td>The whole page, or back to the library</td></tr>
   </table>
   <h2><small>Your books</small>Shelves</h2>
-  <div class="rule"></div>
-  <div class="card"><b>Continue</b> lists the books you're partway through. A book always opens on the page where you stopped.</div>
-  <div class="card"><b>Comics</b> and <b>Manuals</b> hold your books. A folder of books shows as a series: open it to see the issues.</div>
-  <div class="card"><b>Settings</b> has Wi-Fi upload (next page), Check for updates, the Page turn (curl, slide or none), Reading direction (right to left for manga), Forget reading history, Redraw covers and About.</div>
+  <div class="row">
+    <img class="shot" src="images/series.jpg" style="width:1.6in">
+    <div class="text">
+      <div class="card"><b>Continue</b> lists the books you're partway through. A book always opens on the page where you stopped.</div>
+      <div class="card"><b>Comics</b> and <b>Manuals</b> hold your books. A folder of books is a series: it shows as a stack, and opens to its issues.</div>
+      <div class="card"><b>Settings</b> has Wi-Fi upload, updates and how pages turn (page 5).</div>
+      <div class="card">Under each cover: <b>NEW!</b>, the page you're on, or <b>FINISHED!</b></div>
+    </div>
+  </div>
   <div class="foot"><span>Comic Reader Guide</span><span>2</span></div>
 </section>
 
 <section class="page">
-  <h2><small>Adding books</small>Wi-Fi upload</h2>
-  <div class="rule"></div>
-  <ol>
-    <li>In <b>Settings</b>, open <b>Wi-Fi upload</b>. The cabinet shows an address and a four-digit PIN.</li>
-    <li>On a phone or computer on the same network, open the address in a browser and enter the PIN.</li>
-    <li>Choose <b>Comics</b> or <b>Manuals</b>, and a series if you like (or make a new one).</li>
-    <li>Drop in your files, or a folder of page pictures. Press B when they're sent: they're in your library.</li>
-  </ol>
-  <h2><small>Or copy them</small>On the USB stick</h2>
-  <div class="rule"></div>
-  <div class="card">Put books in <code>external/comic-reader/comics/</code> or <code>manuals/</code>. A folder inside makes a series:<br>
-    <code>comics/Planet Comics/Planet Comics 037.cbr</code></div>
-  <h2><small>What it opens</small>File types</h2>
-  <div class="rule"></div>
-  <div class="card"><b>PDF</b>, <b>CBZ</b>, <b>CBR</b> and <b>CBT</b> comics, single pictures (JPG, PNG, WebP, GIF, BMP, TIFF), and a folder of pictures as one book, its pages in name order. A <b>ComicInfo.xml</b> inside a comic gives it its series, issue and credits (press Y). No ComicInfo? Press X on the details card to look the book up in the Grand Comics Database.</div>
+  <h2><small>Reading</small>Turn, zoom, read</h2>
+  <div class="trio">
+    <div><img class="shot" src="images/reader.jpg" style="width:1.75in"><div class="cap"><b>The page</b>As big as the screen: 2160 pixels wide on a 4KP. The title and page number show as it opens.</div></div>
+    <div><img class="shot" src="images/curl.jpg" style="width:1.75in"><div class="cap"><b>Page turn</b>The page curls over. Settings can make it a slide, or none.</div></div>
+    <div><img class="shot" src="images/zoom.jpg" style="width:1.75in"><div class="cap"><b>Zoom</b>Start: 2x, 3x, back. The joystick moves around; the text sharpens when you stop.</div></div>
+  </div>
+  <div class="card"><b>Next pages are ready before you get there:</b> the app draws ahead while you read, so turning is instant. A scanned PDF takes longest, about a second a page.</div>
+  <div class="card"><b>Manga:</b> Settings &gt; Reading direction &gt; Right to left swaps the flippers, so the left one turns forward. A book marked as manga in its ComicInfo.xml reads that way by itself.</div>
+  <div class="card"><b>B</b> while zoomed shows the whole page again; B on the whole page goes back to the library. Your place is saved.</div>
   <div class="foot"><span>Comic Reader Guide</span><span>3</span></div>
+</section>
+
+<section class="page">
+  <h2><small>What's this book?</small>Details</h2>
+  <div class="row">
+    <img class="shot" src="images/details.jpg" style="width:1.75in">
+    <div class="text">
+      <div class="card">Press <b>Y</b> on a book in the library: its cover, series and issue, the story, who published it and when, the writer and artist, a summary, and how far in you are.</div>
+      <div class="card">The details come from a <b>ComicInfo.xml</b> file inside the comic, the tag file most comic tools write. A book with one shows as <b>"Daredevil Comics #1"</b> in the library and on the DMD, not by its file name.</div>
+    </div>
+  </div>
+  <h2><small>No ComicInfo?</small>Look it up</h2>
+  <div class="row">
+    <div class="text">
+      <ol>
+        <li>On the details, press <b>X</b>. The series and issue number are read from the name: <code>Jumbo_Comics_082.cbr</code> is Jumbo Comics #82.</li>
+        <li>It's looked up in the <b>Grand Comics Database</b> (comics.org), which knows the story, date, credits and what's inside.</li>
+        <li>"Is this it?" <b>A</b> keeps it, <b>X</b> tries another series with that number, <b>B</b> drops it. Kept details stay in the app; your file isn't changed.</li>
+      </ol>
+    </div>
+    <img class="shot" src="images/lookup.jpg" style="width:1.55in">
+  </div>
+  <p class="small">The cabinet needs the internet for this. comics.org allows a few dozen lookups an hour for each home; if it asks you to wait, it says for how long. Details: Grand Comics Database, CC BY-SA 4.0.</p>
+  <div class="foot"><span>Comic Reader Guide</span><span>4</span></div>
+</section>
+
+<section class="page">
+  <h2><small>Make it yours</small>Settings</h2>
+  <div class="row">
+    <img class="shot" src="images/settings.jpg" style="width:2.1in">
+    <div class="text">
+      <div class="card"><b>Wi-Fi upload:</b> send books from a phone or computer (next page).</div>
+      <div class="card"><b>Check for updates:</b> gets the newest version from GitHub and restarts into it. Your books, places and settings stay.</div>
+      <div class="card"><b>Page turn:</b> Curl, Slide or None. <b>Reading direction:</b> Left to right, or Right to left for manga. Change them with the joystick.</div>
+      <div class="card"><b>Forget reading history:</b> clears Continue and every book's place. <b>Redraw covers:</b> draws every cover again.</div>
+      <div class="card"><b>About:</b> the version, the license and who made what.</div>
+    </div>
+  </div>
+  <div class="foot"><span>Comic Reader Guide</span><span>5</span></div>
+</section>
+
+<section class="page">
+  <h2><small>Adding books</small>Wi-Fi upload</h2>
+  <div class="row">
+    <img class="shot" src="images/upload-page.jpg" style="width:2.2in">
+    <div class="text">
+      <ol>
+        <li>In <b>Settings</b>, open <b>Wi-Fi upload</b>. The cabinet shows an address and a PIN.</li>
+        <li>On a phone or computer on the same network, open the address and enter the PIN.</li>
+        <li>Pick <b>Comics</b> or <b>Manuals</b>, and a series (or make a new one).</li>
+        <li>Drop in files, or a folder of page pictures. B on the cabinet when they're sent.</li>
+      </ol>
+      <h3>Or on the USB stick</h3>
+      <div class="card">Put books in <code>external/comic-reader/comics/</code> or <code>manuals/</code>. A folder of books makes a series: <code>comics/Planet Comics/Planet Comics 037.cbr</code></div>
+      <h3>What it opens</h3>
+      <div class="card"><b>PDF</b>, <b>CBZ</b>, <b>CBR</b> and <b>CBT</b> comics, single pictures (JPG, PNG, WebP, GIF, BMP, TIFF), and a folder of pictures as one book, its pages in name order.</div>
+    </div>
+  </div>
+  <div class="foot"><span>Comic Reader Guide</span><span>6</span></div>
 </section>
 
 </body></html>

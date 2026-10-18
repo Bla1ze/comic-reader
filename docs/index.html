@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comic Reader for AtGames Legends pinball</title>
+<meta name="description" content="Read comics and manuals on an AtGames Legends pinball cabinet: pages on the playfield, the cover on the backglass, the page on the DMD. PDF, CBZ, CBR, WebP. Free software.">
+<meta property="og:title" content="Comic Reader for AtGames Legends pinball">
+<meta property="og:description" content="Comics and manuals on your cabinet: pages on the playfield, the cover on the backglass.">
+<meta property="og:image" content="https://bla1ze.github.io/comic-reader/images/library.jpg">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root { --paper: #f4e8c8; --dot: #e2cca0; --ink: #181412; --red: #d6242a; --red-dot: #b0161e; --yellow: #ffd426; --blue: #1e56a8; --white: #fffbf0; --muted: #705c42; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; color: var(--ink); font: 700 17px/1.5 'Comic Neue', 'Comic Sans MS', system-ui, sans-serif;
+  background: radial-gradient(circle, var(--dot) 2.6px, transparent 3.2px) 0 0/14px 14px, var(--paper); }
+img { max-width: 100%; display: block; }
+a { color: var(--blue); }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+.bang, h1, h2, h3, .btn, .tag { font-family: Bangers, Impact, 'Arial Black', sans-serif; font-weight: 400; letter-spacing: .04em; }
+.outline { text-shadow: -3px -3px 0 var(--ink), 3px -3px 0 var(--ink), -3px 3px 0 var(--ink), 3px 3px 0 var(--ink), 6px 6px 0 var(--ink); }
+.box { background: var(--white); border: 4px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); }
+
+/* Masthead */
+header { background: radial-gradient(circle, var(--red-dot) 4px, transparent 4.8px) 0 0/18px 18px, var(--red);
+  border-bottom: 5px solid var(--ink); padding: 34px 0 40px; text-align: center; }
+.tag { display: inline-block; background: var(--white); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); padding: 4px 14px; font-size: 20px; transform: rotate(-2deg); }
+h1 { font-size: clamp(56px, 13vw, 116px); line-height: .9; margin: 16px 0 14px; color: var(--yellow); }
+.sub { display: inline-block; max-width: 640px; font-size: 19px; padding: 12px 18px; }
+.btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
+.btn { font-size: 24px; color: var(--ink); text-decoration: none; background: var(--yellow); border: 4px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); padding: 10px 20px; }
+.btn.alt { background: var(--white); }
+.btn:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--ink); }
+.btn:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--ink); }
+
+/* Sections */
+section { padding: 46px 0 10px; }
+h2 { font-size: clamp(38px, 7vw, 56px); margin: 0 0 18px; color: var(--red); text-shadow: 3px 3px 0 var(--ink); line-height: 1; }
+h2 small { display: inline-block; font-size: 18px; color: var(--ink); background: var(--yellow); border: 3px solid var(--ink); padding: 2px 12px; margin-right: 10px; text-shadow: none; vertical-align: middle; transform: rotate(-2deg); }
+h3 { font-size: 30px; margin: 0 0 6px; color: var(--blue); }
+
+/* Three screens */
+.screens { display: grid; grid-template-columns: 1fr 1.6fr; gap: 26px; align-items: start; }
+.screens .stack { display: grid; gap: 22px; }
+.shot { border: 4px solid var(--ink); box-shadow: 7px 7px 0 var(--ink); background: var(--ink); width: 100%; }
+.cap { margin-top: 10px; text-align: center; font-size: 16px; }
+.cap b { display: block; font-family: Bangers, Impact, sans-serif; font-weight: 400; font-size: 26px; color: var(--red); letter-spacing: .04em; }
+
+/* Feature panels */
+.panels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
+.panel { padding: 14px; }
+.panel .shot { margin-bottom: 12px; }
+.panel p { margin: 0; }
+
+/* Lists */
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+ol, ul { margin: 0; padding: 16px 18px 16px 40px; }
+li { margin: 6px 0; }
+code { font: 14px/1.4 Menlo, monospace; color: var(--red); word-break: break-word; }
+.note { font-size: 15px; color: var(--muted); }
+
+footer { margin-top: 50px; border-top: 5px solid var(--ink); background: var(--yellow); padding: 26px 0 34px; font-size: 15px; }
+footer p { margin: 6px 0; }
+
+@media (max-width: 760px) {
+  .screens, .two { grid-template-columns: 1fr; }
+  .panels { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .panels { grid-template-columns: 1fr; }
+  body { font-size: 16px; }
+}
+</style></head><body>
+
+<header>
+  <div class="wrap">
+    <span class="tag">For AtGames Legends pinball: 4KP and HDP</span>
+    <h1 class="outline">Comic Reader!</h1>
+    <p class="sub box">Read comics and manuals on your cabinet. Pages on the playfield, the cover on the backglass, the page you're on on the DMD.</p>
+    <div class="btns">
+      <a class="btn" href="https://github.com/Bla1ze/comic-reader/releases/latest">Download</a>
+      <a class="btn alt" href="Comic%20Reader%20Guide.pdf">The guide (PDF)</a>
+      <a class="btn alt" href="https://github.com/Bla1ze/comic-reader">Source code</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<section>
+  <h2><small>Three screens</small>The whole cabinet</h2>
+  <div class="screens">
+    <div><img class="shot" src="images/library.jpg" alt="The library on the playfield: comic covers in inked frames"><div class="cap"><b>Playfield</b>Your library, then the pages at full size: 2160 pixels wide on a 4KP.</div></div>
+    <div class="stack">
+      <div><img class="shot" src="images/reader-backglass.jpg" alt="The backglass: the comic's cover over a blur of itself"><div class="cap"><b>Backglass</b>The book's cover.</div></div>
+      <div><img class="shot" src="images/reader-dmd.jpg" alt="The DMD: the title and 1 / 36"><div class="cap"><b>DMD</b>The title and the page you're on.</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><small>Reading</small>Pow! Zoom! Turn!</h2>
+  <div class="panels">
+    <div class="panel box"><img class="shot" src="images/reader.jpg" alt="A comic open on the playfield"><h3>Read</h3><p>Flippers turn the page; hold one to flip fast. Your place is kept in every book, and Continue lists the ones you're partway through.</p></div>
+    <div class="panel box"><img class="shot" src="images/curl.jpg" alt="A page curling over"><h3>Page curl</h3><p>The page folds over, print showing faintly through the back. Or a slide, or none: your pick in Settings.</p></div>
+    <div class="panel box"><img class="shot" src="images/zoom.jpg" alt="A page zoomed in to 2x"><h3>Zoom</h3><p>Start zooms to 2x and 3x; the joystick moves around, and the text sharpens when you stop. Great for small print.</p></div>
+    <div class="panel box"><img class="shot" src="images/lookup.jpg" alt="A book looked up in the Grand Comics Database: story, date, writer and artist"><h3>Details</h3><p>Y shows a book's series, story, date, credits and summary, from its ComicInfo.xml, or looked up in the Grand Comics Database.</p></div>
+    <div class="panel box"><img class="shot" src="images/settings.jpg" alt="The Settings shelf"><h3>Settings</h3><p>Wi-Fi upload, updates from GitHub, the page turn, right-to-left reading for manga, and more.</p></div>
+    <div class="panel box"><img class="shot" src="images/upload-page.jpg" alt="The Wi-Fi upload page on a phone"><h3>Wi-Fi upload</h3><p>Send books from a phone or computer: open the address the cabinet shows, enter its PIN, drop the files in.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2><small>Get it</small>Install</h2>
+  <div class="two">
+    <div class="box">
+      <ol>
+        <li>Download <code>comic-reader-v…zip</code> from the <a href="https://github.com/Bla1ze/comic-reader/releases/latest">latest release</a>.</li>
+        <li>Unzip it and copy its <code>external</code> folder to the root of your cabinet's USB stick.</li>
+        <li>Comic Reader shows up with the other External Apps.</li>
+        <li>Later versions: Settings &gt; Check for updates.</li>
+      </ol>
+    </div>
+    <div class="box">
+      <ul>
+        <li><b>Opens:</b> PDF, CBZ, CBR, CBT, single pictures (JPG, PNG, WebP, GIF, BMP, TIFF) and folders of pictures.</li>
+        <li><b>Books go in</b> <code>external/comic-reader/comics/</code> or <code>manuals/</code>; a folder of books is a series.</li>
+        <li><b>Try it out:</b> the release has an optional pack of public-domain Golden Age comics, one of each file type.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">Comic Reader ships no copyrighted books: bring your own. Read <a href="Comic%20Reader%20Guide.pdf">the guide</a> for every button.</p>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><b>Comic Reader</b> by Bla1ze is free software under the GNU AGPL 3.0: <a href="https://github.com/Bla1ze/comic-reader">github.com/Bla1ze/comic-reader</a>.</p>
+    <p>It uses MuPDF (Artifex), libarchive and libwebp. Lettering: Bangers and Comic Neue. Looked-up details: the Grand Comics Database (comics.org), CC BY-SA 4.0.</p>
+    <p>Not made or endorsed by AtGames. The sample comics are from the Internet Archive: Jumbo Comics and Planet Comics (Fiction House), Daredevil Comics (Lev Gleason), My Secret Marriage (Superior), and PS Magazine (US Army).</p>
+  </div>
+</footer>
+
+</body></html>

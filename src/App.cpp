@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstdio>
 #include <map>
 #include <memory>
@@ -895,7 +896,14 @@ void App::update(float dt) {
     pumpCovers();
     if (m_reading) {
         pumpPages();
-        if (m_slideT < 1.0f) m_slideT = std::min(1.0f, m_slideT + dt / (m_turnStyle == "curl" ? kCurlTime : kSlideTime));
+        if (m_slideT < 1.0f) {
+            // COMIC_READER_TURN_TIME (seconds) slows the turn down, for screenshots in the simulator.
+            static const float slow = std::getenv("COMIC_READER_TURN_TIME") ? (float)std::atof(std::getenv("COMIC_READER_TURN_TIME")) : 0.0f;
+            const float time = slow > 0.0f ? slow : m_turnStyle == "curl" ? kCurlTime : kSlideTime;
+            // COMIC_READER_TURN_HOLD (0..1) stops the turn part way: a screenshot of it.
+            static const float hold = std::getenv("COMIC_READER_TURN_HOLD") ? (float)std::atof(std::getenv("COMIC_READER_TURN_HOLD")) : 1.0f;
+            m_slideT = std::min(hold, std::min(1.0f, m_slideT + dt / time));
+        }
         if (m_hud > 0.0f) m_hud -= dt;
         m_progressAge += dt;
         if (m_progressDirty && m_progressAge > 8.0f) saveProgress(false);
