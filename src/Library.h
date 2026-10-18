@@ -15,6 +15,9 @@ namespace Library {
 void openLog(const std::string& appDir);
 void log(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 void logInputDevices();
+// A crash (SIGSEGV, SIGBUS, SIGILL, SIGFPE, SIGABRT) writes the signal and a
+// backtrace to the log before the app goes down.
+void installCrashLog();
 
 void ensureFolders(const std::string& appDir);
 

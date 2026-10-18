@@ -26,24 +26,26 @@ struct Groups {
 // single-cluster machine everything is fast and slow is empty.
 inline const Groups& groups()
 {
-    static Groups g;
-    static bool done = false;
-    if (done) return g;
-    done = true;
-    std::vector<long> freq;
-    long top = 0;
-    for (int cpu = 0; cpu < 16; ++cpu) {
-        char path[96];
-        std::snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq", cpu);
-        FILE* f = std::fopen(path, "r");
-        if (!f) break;
-        long v = 0;
-        if (std::fscanf(f, "%ld", &v) != 1) v = 0;
-        std::fclose(f);
-        freq.push_back(v);
-        if (v > top) top = v;
-    }
-    for (size_t i = 0; i < freq.size(); ++i) (freq[i] == top ? g.fast : g.slow).push_back(static_cast<int>(i));
+    // Built once, thread-safely (a static initialized by a lambda): several
+    // threads ask at start, and one saw the groups half filled.
+    static const Groups g = [] {
+        Groups out;
+        std::vector<long> freq;
+        long top = 0;
+        for (int cpu = 0; cpu < 16; ++cpu) {
+            char path[96];
+            std::snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq", cpu);
+            FILE* f = std::fopen(path, "r");
+            if (!f) break;
+            long v = 0;
+            if (std::fscanf(f, "%ld", &v) != 1) v = 0;
+            std::fclose(f);
+            freq.push_back(v);
+            if (v > top) top = v;
+        }
+        for (size_t i = 0; i < freq.size(); ++i) (freq[i] == top ? out.fast : out.slow).push_back(static_cast<int>(i));
+        return out;
+    }();
     return g;
 }
 

@@ -385,9 +385,15 @@ void Panels::composeBackglass(Panel& p, const Item& item, const std::vector<uint
 void Panels::composeDmd(Panel& p, const Item& item) {
     const int W = p.vw, H = p.vh;
     std::vector<uint8_t>& c = p.canvas;
-    gradient(c, W, H);
-    glow(c, W, H, W * 0.1f, H * 0.5f, H * 1.4f, kTeal, 0.14f);
-    glow(c, W, H, W * 0.92f, H * 0.5f, H * 1.4f, kViolet, 0.16f);
+    // The lit background is the slow part (365 ms on the cabinet's small
+    // cores): drawn once, then copied for every page.
+    if (m_dmdGround.size() != c.size()) {
+        m_dmdGround.assign(c.size(), 0);
+        gradient(m_dmdGround, W, H);
+        glow(m_dmdGround, W, H, W * 0.1f, H * 0.5f, H * 1.4f, kTeal, 0.14f);
+        glow(m_dmdGround, W, H, W * 0.92f, H * 0.5f, H * 1.4f, kViolet, 0.16f);
+    }
+    c = m_dmdGround;
     if (item.title.empty()) {
         text(c, W, H, "COMIC READER", W * 0.5f, H * 0.3f, H * 0.36f, kInk, PanelFont::Face::Display, W * 0.9f);
         return;

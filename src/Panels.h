@@ -56,6 +56,7 @@ private:
     std::vector<Panel> m_panels;
     std::string m_lastKey, m_lastCoverRel = "\x01";
     std::string m_shownBg = "\x01", m_shownDmd = "\x01";
+    std::vector<uint8_t> m_dmdGround;  // the DMD's background, drawn once
 
     std::thread m_thread;
     std::mutex m_mutex;

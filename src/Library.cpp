@@ -3,6 +3,8 @@
 #include "Doc.h"
 
 #include <dirent.h>
+#include <execinfo.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -82,6 +84,28 @@ void log(const char* fmt, ...) {
         std::fprintf(g_log, "%s\n", buf);
         std::fflush(g_log);
     }
+}
+
+namespace {
+void onCrash(int sig) {
+    // Only async-signal-safe calls: write() and backtrace_symbols_fd().
+    if (g_log) {
+        const int fd = fileno(g_log);
+        char msg[64];
+        const int n = std::snprintf(msg, sizeof(msg), "crash: signal %d, backtrace:\n", sig);
+        if (n > 0 && ::write(fd, msg, (size_t)n) < 0) {}
+        void* frames[48];
+        backtrace_symbols_fd(frames, backtrace(frames, 48), fd);
+    }
+    ::signal(sig, SIG_DFL);
+    ::raise(sig);
+}
+}  // namespace
+
+void installCrashLog() {
+    void* warm[2];
+    backtrace(warm, 2);  // loads libgcc now, not inside the handler
+    for (int sig : {SIGSEGV, SIGBUS, SIGILL, SIGFPE, SIGABRT}) ::signal(sig, onCrash);
 }
 
 void logInputDevices() {

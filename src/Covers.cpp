@@ -8,6 +8,8 @@
 
 #include <chrono>
 #include <cstdlib>
+#include <functional>
+#include <thread>
 
 using Library::log;
 
@@ -39,7 +41,9 @@ bool load(cr_ctx* ctx, const std::string& appDir, const std::string& rel, std::v
     }
     out.assign(px, px + (size_t)w * h * 4);
     std::free(px);
-    const std::string tmp = cache + ".tmp";
+    // Two threads can draw the same cover at once (the grid and the backglass):
+    // each writes its own temporary file.
+    const std::string tmp = cache + "." + std::to_string((unsigned long)std::hash<std::thread::id>()(std::this_thread::get_id())) + ".tmp";
     if (cr_save_jpeg(ctx, out.data(), w, h, tmp.c_str(), 85) == 0) std::rename(tmp.c_str(), cache.c_str());
     else ::unlink(tmp.c_str());
     long ms = (long)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();

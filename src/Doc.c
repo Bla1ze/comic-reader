@@ -4,6 +4,7 @@
 #include <mupdf/fitz.h>
 
 #include <ctype.h>
+#include <pthread.h>
 #include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,26 +35,66 @@ static void quiet(void *user, const char *message)
 	(void)message;
 }
 
+/* MuPDF across threads: one base context with real locks, and a clone of it
+ * per thread. Contexts made separately with fz_new_context and no locks are
+ * NOT independent: MuPDF keeps some state in globals (OpenJPEG's allocator
+ * context, FreeType) and guards it with these locks. Two threads decoding a
+ * JPEG 2000 page at once crashed the app on the Manuals shelf. */
+static pthread_mutex_t g_mutex[FZ_LOCK_MAX];
+static fz_context *g_base;
+static pthread_once_t g_once = PTHREAD_ONCE_INIT;
+
+static void lock(void *user, int n)
+{
+	(void)user;
+	pthread_mutex_lock(&g_mutex[n]);
+}
+
+static void unlock(void *user, int n)
+{
+	(void)user;
+	pthread_mutex_unlock(&g_mutex[n]);
+}
+
+static void make_base(void)
+{
+	static fz_locks_context locks;
+	int i;
+	for (i = 0; i < FZ_LOCK_MAX; i++)
+		pthread_mutex_init(&g_mutex[i], NULL);
+	locks.user = NULL;
+	locks.lock = lock;
+	locks.unlock = unlock;
+	/* Up to 256 MB of decoded images, shared by every thread. */
+	g_base = fz_new_context(NULL, &locks, 256u << 20);
+	if (!g_base)
+		return;
+	fz_set_warning_callback(g_base, quiet, NULL);
+	fz_try(g_base)
+		fz_register_document_handlers(g_base);
+	fz_catch(g_base)
+	{
+		fz_drop_context(g_base);
+		g_base = NULL;
+	}
+}
+
 cr_ctx *cr_ctx_new(void)
 {
-	cr_ctx *c = (cr_ctx *)calloc(1, sizeof(*c));
+	cr_ctx *c;
+	pthread_once(&g_once, make_base);
+	if (!g_base)
+		return NULL;
+	c = (cr_ctx *)calloc(1, sizeof(*c));
 	if (!c)
 		return NULL;
-	/* Up to 256 MB of decoded images kept between pages of the open book. */
-	c->fz = fz_new_context(NULL, NULL, 256u << 20);
+	c->fz = fz_clone_context(g_base);
 	if (!c->fz) {
 		free(c);
 		return NULL;
 	}
 	fz_set_warning_callback(c->fz, quiet, NULL);
-	fz_try(c->fz)
-		fz_register_document_handlers(c->fz);
-	fz_catch(c->fz)
-	{
-		fz_drop_context(c->fz);
-		free(c);
-		return NULL;
-	}
+	fz_set_error_callback(c->fz, quiet, NULL);
 	return c;
 }
 

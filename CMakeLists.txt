@@ -67,8 +67,9 @@ target_include_directories(${ATGAMES_APP_NAME} PRIVATE
 target_link_libraries(${ATGAMES_APP_NAME} PRIVATE
     ${COMIC_DEPS}/lib/libmupdf.a ${COMIC_DEPS}/lib/libmupdf-third.a ${COMIC_DEPS}/lib/libarchive.a
     ${SDL2_LIBRARY} pthread dl m)
-# A smaller ELF: MuPDF is large and mostly symbols.
-set_target_properties(${ATGAMES_APP_NAME} PROPERTIES LINK_FLAGS "-s")
+# Not stripped: a crash backtrace in the log then names functions. (-rdynamic
+# exports them to backtrace_symbols.)
+set_target_properties(${ATGAMES_APP_NAME} PROPERTIES LINK_FLAGS "-rdynamic")
 
 set(DIST_APP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../dist/external/${ATGAMES_APP_NAME}")
 set(METADATA_ASSET_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets/metadata")

@@ -885,6 +885,7 @@ void App::renderReader() {
 int runApp(const std::string& appDir) {
     Library::ensureFolders(appDir);
     Library::openLog(appDir);
+    Library::installCrashLog();
     log("Comic Reader %s, app folder %s", kVersion, appDir.c_str());
     CpuPin::enabled() = true;  // before any worker thread starts
     App app(appDir);
