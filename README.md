@@ -43,7 +43,7 @@ on the DMD.
 ## FAQ
 
 **Which cabinets does it work on?**
-It's made for the AtGames Legends Pinball 4KP and HDP: pages on the playfield, the cover on the backglass, the page number on the DMD. It works out which screen is which on each model by itself. Other Legends models haven't been tried.
+It's made for the AtGames Legends Pinball 4KP and HDP: pages on the playfield, the cover on the backglass, the page number on the DMD. It works out which screen is which on each model by itself. Other Legends models haven't been tried. It was designed to be used with the AtGames Legends Arcade Control Panel (its joystick and A, B, X, Y and Start buttons, with the cabinet's flippers); it may work without one, but that hasn't been tested.
 
 **Where do I get comics?**
 Bring your own files. For free, legal ones, public-domain Golden Age comics are on the [Digital Comic Museum](https://digitalcomicmuseum.com) and [Comic Book Plus](https://comicbookplus.com) (both free with an account) and the [Internet Archive](https://archive.org). The release's sample pack has a few to start with. Comic Reader ships no copyrighted books.
@@ -89,6 +89,13 @@ The app keeps a log at `external/comic-reader/data/comic-reader.log` on the stic
 
 **Is it free? Is it from AtGames?**
 It's free software (GNU AGPL 3.0), made by Bla1ze. It isn't made or endorsed by AtGames.
+
+## Requirements
+
+An AtGames Legends Pinball 4KP or HDP. Comic Reader was designed to be used with
+the AtGames Legends Arcade Control Panel (its joystick and A, B, X, Y and Start
+buttons, with the cabinet's flippers). It may work without one, but that hasn't
+been tested.
 
 ## Controls
 
