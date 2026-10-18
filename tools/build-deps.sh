@@ -19,6 +19,14 @@ mkdir -p $D/src $D/out $P/lib $P/include
 
 (cd $D/dl && sha256sum -c $APP/tools/deps.sha256)
 
+# What the libraries are built from: the pinned sources and MuPDF patches. A
+# change (a new patch, a new version) rebuilds them all; otherwise this is quick.
+STAMP=$(cat $APP/tools/deps.sha256 $APP/tools/patches/*.patch $APP/tools/build-deps.sh | sha256sum | cut -d' ' -f1)
+if [ "$(cat $P/.stamp 2>/dev/null)" != "$STAMP" ]; then
+  echo "building the libraries (sources or patches changed)"
+  rm -rf $P/lib/* $P/include/*
+fi
+
 if [ ! -f $P/lib/libarchive.a ]; then
   rm -rf $D/src/$ARCHIVE && tar -xJf $D/dl/$ARCHIVE.tar.xz -C $D/src
   cd $D/src/$ARCHIVE
@@ -61,4 +69,5 @@ if [ ! -f $P/lib/libmupdf.a ]; then
   cp $B/libmupdf.a $B/libmupdf-third.a $P/lib/
   rm -rf $P/include/mupdf && cp -R include/mupdf $P/include/
 fi
+echo "$STAMP" > $P/.stamp
 ls -la $P/lib

@@ -179,7 +179,8 @@ private:
     Updater m_updater;
     SetView m_setView = SetView::List;
     int m_setSel = 0;
-    bool m_rtl = false;            // reading direction: right to left (manga)
+    bool m_rtl = false;            // Settings > Reading direction: right to left (manga)
+    bool m_readRtl = false;        // the open book reads right to left (the setting, or its ComicInfo)
     std::string m_turnStyle;       // "curl", "slide" or "none"
     float m_restartIn = -1.0f;     // after an update: seconds to the restart
     std::string m_known;           // newest version the last check found ("" if none)
@@ -361,11 +362,11 @@ void App::handle(CE ce) {
         switch (ce) {
         // Right turns forward, left back; right to left (manga) swaps them. A is always forward.
         case CE::A: turn(+1); break;
-        case CE::RightShoulder: case CE::RightTrigger: turn(m_rtl ? -1 : +1); break;
-        case CE::LeftShoulder: case CE::LeftTrigger: case CE::X: turn(m_rtl ? +1 : -1); break;
+        case CE::RightShoulder: case CE::RightTrigger: turn(m_readRtl ? -1 : +1); break;
+        case CE::LeftShoulder: case CE::LeftTrigger: case CE::X: turn(m_readRtl ? +1 : -1); break;
         // The joystick pans when zoomed (pollHeld); otherwise it turns or shows the page number.
-        case CE::DpadRight: if (m_zoom <= 1.0f) turn(m_rtl ? -1 : +1); break;
-        case CE::DpadLeft: if (m_zoom <= 1.0f) turn(m_rtl ? +1 : -1); break;
+        case CE::DpadRight: if (m_zoom <= 1.0f) turn(m_readRtl ? -1 : +1); break;
+        case CE::DpadLeft: if (m_zoom <= 1.0f) turn(m_readRtl ? +1 : -1); break;
         case CE::DpadUp: case CE::DpadDown: if (m_zoom <= 1.0f) m_hud = m_hud > 0.5f ? 0.0f : kHudTime; break;
         case CE::Start: case CE::Y: setZoom(m_zoom >= 3.0f ? 1.0f : m_zoom + 1.0f); break;
         case CE::B: case CE::Back: case CE::Guide:
@@ -451,7 +452,7 @@ void App::pollHeld(float dt) {
     m_holdAcc += dt;
     while (m_holdAcc >= kHoldRepeat) {
         m_holdAcc -= kHoldRepeat;
-        if (m_reading) turn(m_rtl ? -dir : dir);
+        if (m_reading) turn(m_readRtl ? -dir : dir);
         else moveSel(dir);
     }
 }
@@ -671,7 +672,7 @@ void App::openBook(const Library::Entry& e) {
     dropDetail();
     {
         auto it = m_info.find(e.rel);
-        m_rtl = (it != m_info.end() && it->second.rtl) || m_settings.get("direction", "ltr") == "rtl";
+        m_readRtl = m_rtl || (it != m_info.end() && it->second.rtl);
     }
     m_gen = m_pages.open(m_appDir + "/" + e.rel, m_canvasW, m_canvasH);
     log("open %s at page %d", e.rel.c_str(), m_page + 1);
@@ -704,7 +705,7 @@ void App::turn(int dir) {
         // Zoomed: straight to the next page's top (left edge going forward, right going back).
         m_slideT = 1.0f;
         m_slideFrom = -1;
-        m_vx = dir > 0 ? 0.0f : 1e9f;
+        m_vx = (dir > 0) != m_readRtl ? 0.0f : 1e9f;  // forward: the top corner reading starts at
         m_vy = 0.0f;
         clampView();
         return;
@@ -1450,11 +1451,11 @@ void App::renderReader() {
         const Tex& top = m_pageTex[forward ? m_slideFrom : m_page];   // the sheet being turned
         const Tex& under = m_pageTex[forward ? m_page : m_slideFrom]; // what it uncovers
         const float t = forward ? e : 1.0f - e;
-        curl(top, under, t, m_rtl);
+        curl(top, under, t, m_readRtl);
         shown = true;
     } else {
         // Slide: the new page pushes the old one out (from the left when reading right to left).
-        const int pd = m_rtl ? -m_slideDir : m_slideDir;
+        const int pd = m_readRtl ? -m_slideDir : m_slideDir;
         if (sliding) draw(m_slideFrom, -pd * e * m_canvasW);
         shown = draw(m_page, sliding ? pd * (1.0f - e) * m_canvasW : 0.0f);
     }

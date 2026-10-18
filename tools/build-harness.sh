@@ -7,7 +7,7 @@ OUT=/workspace/comic-reader-deps/out
 mkdir -p $OUT/harness
 cd $OUT/harness
 aarch64-linux-gnu-gcc -O2 -std=c99 -c -I$P/include $APP/src/Doc.c $APP/src/compat.c
-for f in Library Covers Pages Transfer; do
+for f in Library Covers Pages Transfer Net Update; do
   aarch64-linux-gnu-g++ -O2 -std=c++14 -c -I$APP/src -I$P/include $APP/src/$f.cpp
 done
 aarch64-linux-gnu-g++ -O2 -std=c++14 -c -I$APP/src -I$P/include $APP/tools/harness.cpp

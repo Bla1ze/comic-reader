@@ -6,6 +6,7 @@
 #include "../src/Library.h"
 #include "../src/Pages.h"
 #include "../src/Transfer.h"
+#include "../src/Update.h"
 
 #include <unistd.h>
 
@@ -29,6 +30,28 @@ int main(int argc, char** argv) {
     Library::ensureFolders(app);
     Library::openLog(app);
     int fails = 0;
+
+    // harness <app> update: check (COMIC_READER_RELEASES_FILE / _PRETEND_VERSION
+    // steer it) and install, as Settings > Check for updates does.
+    if (argc >= 3 && std::string(argv[2]) == "update") {
+        Updater u;
+        u.check(app, false);
+        auto waitWhile = [&](std::initializer_list<Updater::State> busy) {
+            for (int i = 0; i < 6000; ++i) {
+                bool b = false;
+                for (Updater::State s : busy) b |= u.state() == s;
+                if (!b) return;
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            }
+        };
+        waitWhile({Updater::State::Idle, Updater::State::Checking});
+        std::printf("check: state %d, latest %s, %s\n", (int)u.state(), u.latest().c_str(), u.message().c_str());
+        if (u.state() != Updater::State::Available) return 1;
+        u.install();
+        waitWhile({Updater::State::Available, Updater::State::Downloading, Updater::State::Installing});
+        std::printf("install: state %d (%s), files updated %d\n", (int)u.state(), u.message().c_str(), u.filesUpdated());
+        return u.state() == Updater::State::Done ? 0 : 1;
+    }
 
     // 1. The library.
     for (const char* shelf : {"comics", "manuals"}) {
