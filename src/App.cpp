@@ -25,6 +25,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstdio>
+#include <ctime>
 #include <map>
 #include <memory>
 #include <set>
@@ -49,7 +50,7 @@ enum Tab { kContinue, kComics, kManuals, kSettings, kTabCount };
 const char* const kTabNames[kTabCount] = {"Continue", "Comics", "Manuals", "Settings"};
 
 // Settings rows.
-enum SetRow { kRowUpload, kRowUpdates, kRowTurn, kRowDirection, kRowForget, kRowCovers, kRowAbout, kSetRows };
+enum SetRow { kRowUpload, kRowUpdates, kRowTurn, kRowDirection, kRowAttract, kRowForget, kRowCovers, kRowAbout, kSetRows };
 enum class SetView { List, Upload, Updates, About };
 enum class Confirm { None, Exit, Forget };
 
@@ -68,6 +69,7 @@ constexpr size_t kMaxCovers = 90;
 constexpr float kHoldDelay = 0.45f, kHoldRepeat = 0.16f;
 constexpr float kSlideTime = 0.24f, kCurlTime = 0.42f, kHudTime = 2.2f;
 constexpr float kPanSpeed = 900.0f;  // logical px a second at full stick
+constexpr float kAttractPage = 10.0f;  // attract mode: seconds a page, a reading pace
 
 bool exists(const std::string& p) {
     struct stat st;
@@ -128,6 +130,8 @@ private:
     void renderReader();
     void curl(const Tex& top, const Tex& under, float t, bool fromLeft);
     void saveProgress(bool force);
+    void startAttract();
+    void stopAttract();
     void setZoom(float z);
     void clampView();
     void pan(float dx, float dy);
@@ -187,6 +191,12 @@ private:
     bool m_readRtl = false;        // the open book reads right to left (the setting, or its ComicInfo)
     std::string m_turnStyle;       // "curl", "slide" or "none"
     float m_restartIn = -1.0f;     // after an update: seconds to the restart
+    // Attract mode: after m_attractAfter idle seconds in the library (0 = off),
+    // random comics read themselves; nothing is saved, any button stops it.
+    float m_attractAfter = 300.0f;
+    float m_idle = 0.0f;
+    bool m_attract = false;
+    float m_attractPage = 0.0f;    // seconds on the current page
     std::string m_known;           // newest version the last check found ("" if none)
     Updater::State m_seenState = Updater::State::Idle;
     int m_uploadSeen = 0;
@@ -297,6 +307,9 @@ int App::run() {
     m_settings.load(m_appDir);
     m_rtl = m_settings.get("direction", "ltr") == "rtl";
     m_turnStyle = m_settings.get("turn", "curl");
+    m_attractAfter = (float)std::atoi(m_settings.get("attract", "300").c_str());
+    if (const char* t = std::getenv("COMIC_READER_ATTRACT_AFTER")) m_attractAfter = (float)std::atof(t);  // testing in the simulator
+    std::srand((unsigned)std::time(nullptr));
     m_known = Updater::knownLatest(m_appDir);
     // A quiet check for a newer version, at most once an hour.
     if (Updater::startupCheckDue(m_appDir)) m_updater.check(m_appDir, true);
@@ -347,6 +360,11 @@ void App::present() {
 
 void App::handle(CE ce) {
     if (ce != CE::None) log("input: %d", (int)ce);
+    m_idle = 0.0f;
+    if (m_attract) {
+        stopAttract();
+        return;
+    }
     if (m_confirm) {
         if (ce == CE::DpadUp || ce == CE::DpadDown) m_confirmSel ^= 1;
         else if (ce == CE::A || ce == CE::Start) {
@@ -436,6 +454,7 @@ void App::handle(CE ce) {
 
 // Hold a flipper (or an arrow) to keep turning pages / moving.
 void App::pollHeld(float dt) {
+    if (m_attract) return;
     bool left = false, right = false, up = false, down = false;
     for (int i = 0; i < SDL_NumJoysticks(); ++i) {
         SDL_GameController* gc = SDL_GameControllerFromInstanceID(SDL_JoystickGetDeviceInstanceID(i));
@@ -544,6 +563,12 @@ void App::settingsInput(CE ce) {
             while (i < 3 && m_turnStyle != styles[i]) ++i;
             m_turnStyle = styles[((i % 3) + d + 3) % 3];
             m_settings.set("turn", m_turnStyle);
+        } else if (m_setSel == kRowAttract) {
+            static const int mins[3] = {5, 10, 0};
+            int i = 0;
+            while (i < 3 && (int)(m_attractAfter / 60) != mins[i]) ++i;
+            m_attractAfter = mins[((i % 3) + d + 3) % 3] * 60.0f;
+            m_settings.set("attract", std::to_string((int)m_attractAfter));
         } else if (m_setSel == kRowDirection) {
             m_rtl = !m_rtl;
             m_settings.set("direction", m_rtl ? "rtl" : "ltr");
@@ -558,7 +583,7 @@ void App::settingsInput(CE ce) {
         switch (m_setSel) {
         case kRowUpload: m_setView = SetView::Upload; m_transfer.start(m_appDir); break;
         case kRowUpdates: m_setView = SetView::Updates; m_updater.check(m_appDir, false); break;
-        case kRowTurn: case kRowDirection: cycle(+1); break;
+        case kRowTurn: case kRowDirection: case kRowAttract: cycle(+1); break;
         case kRowForget: askConfirm(Confirm::Forget); break;
         case kRowCovers: {
             const int n = Library::clearCovers(m_appDir);
@@ -687,7 +712,7 @@ void App::openBook(const Library::Entry& e) {
     m_bookSubtitle = last != slash ? Library::titleOf(e.rel.substr(slash + 1, last - slash - 1))
                                    : (e.rel.compare(0, 7, "manuals") == 0 ? "Manuals" : "Comics");
     const Library::Progress p = m_progress.get(e.rel);
-    m_page = (p.pages > 0 && p.page < p.pages - 1) ? p.page : 0;  // finished books start over
+    m_page = (!m_attract && p.pages > 0 && p.page < p.pages - 1) ? p.page : 0;  // finished books (and attract) start over
     m_pagesN = 0;
     for (auto& kv : m_pageTex)
         if (kv.second.tex) SDL_DestroyTexture(kv.second.tex);
@@ -710,6 +735,7 @@ void App::openBook(const Library::Entry& e) {
 
 void App::closeBook() {
     saveProgress(true);
+    m_readRtl = m_rtl;
     dropDetail();
     m_zoom = 1.0f;
     m_pages.close();
@@ -746,11 +772,39 @@ void App::turn(int dir) {
 }
 
 void App::saveProgress(bool force) {
-    if (!m_reading || m_pagesN <= 0) return;
+    if (!m_reading || m_pagesN <= 0 || m_attract) return;  // attract mode isn't reading: Continue stays as it was
     if (!m_progressDirty && !force) return;
     m_progress.set(m_book.rel, m_page, m_pagesN);
     m_progressDirty = false;
     m_progressAge = 0.0f;
+}
+
+// A random comic from the Comics shelf (series included), from its first page.
+void App::startAttract() {
+    std::vector<Library::Entry> books;
+    for (const Library::Entry& e : Library::list(m_appDir, "comics")) {
+        if (!e.series) { books.push_back(e); continue; }
+        for (const Library::Entry& b : Library::list(m_appDir, e.rel)) books.push_back(b);
+    }
+    if (books.empty()) { m_idle = 0.0f; return; }
+    // Not the same book twice in a row when there's a choice.
+    size_t pick = (size_t)std::rand() % books.size();
+    if (books.size() > 1 && m_reading && books[pick].rel == m_book.rel) pick = (pick + 1) % books.size();
+    if (m_reading) closeBook();
+    m_details = false;
+    m_confirm = false;
+    m_attract = true;
+    m_attractPage = 0.0f;
+    log("attract: %s", books[pick].rel.c_str());
+    openBook(books[pick]);
+    m_hud = kHudTime;
+}
+
+void App::stopAttract() {
+    log("attract: stopped");
+    if (m_reading) closeBook();  // nothing saved: saveProgress skips attract
+    m_attract = false;
+    m_idle = 0.0f;
 }
 
 bool App::fitSize(int& w, int& h) const {
@@ -892,6 +946,20 @@ void App::pumpPages() {
 // ------------------------------------------------------------------ frame
 
 void App::update(float dt) {
+    // Attract mode: sitting in the library (not mid-upload or update) long enough.
+    const bool busy = m_reading || m_confirm || m_lookupOn ||
+                      (m_tab == kSettings && m_setView != SetView::List) || m_restartIn >= 0.0f;
+    if (!busy && m_attractAfter > 0.0f && (m_idle += dt) >= m_attractAfter) startAttract();
+    if (m_attract && m_reading) {
+        const int n = m_pages.pageCount();
+        if (n == -2) startAttract();  // can't open it: another
+        else if (n > 0 && m_slideT >= 1.0f && (m_attractPage += dt) >= kAttractPage) {
+            // Only on once the next page is drawn, so the turn is never to a blank.
+            auto next = m_pageTex.find(m_page + 1);
+            if (m_page >= m_pagesN - 1) startAttract();
+            else if (next != m_pageTex.end() && next->second.tex) { m_attractPage = 0.0f; turn(+1); }
+        }
+    }
     if (m_toastTime > 0.0f) m_toastTime -= dt;
     pumpCovers();
     if (m_reading) {
@@ -1017,7 +1085,7 @@ void App::renderLibrary() {
     std::string hints;
     if (m_tab == kSettings) {
         if (m_setView == SetView::List)
-            hints = m_setSel == kRowTurn || m_setSel == kRowDirection ? "LEFT/RIGHT Change   LB/RB Shelves   B Exit"
+            hints = m_setSel == kRowTurn || m_setSel == kRowDirection || m_setSel == kRowAttract ? "LEFT/RIGHT Change   LB/RB Shelves   B Exit"
                                                                       : "A Open   LB/RB Shelves   B Exit";
         else if (m_setView == SetView::Updates && m_updater.state() == Updater::State::Available) hints = "A Install   B Back";
         else hints = "B Back";
@@ -1285,22 +1353,23 @@ void App::renderSettings() {
     SDL_Renderer* r = m_renderer;
     const AppFont::Face D = AppFont::Face::Display;
     const char* labels[kSetRows] = {"Wi-Fi upload", "Check for updates", "Page turn", "Reading direction",
-                                    "Forget reading history", "Redraw covers", "About"};
+                                    "Attract mode", "Forget reading history", "Redraw covers", "About"};
     const std::string& known = m_known;
     const bool updateKnown = !known.empty() && Updater::isNewer(known, kVersion);
     for (int i = 0; i < kSetRows; ++i) {
         const bool on = i == m_setSel;
-        const FRect rc{Theme::kMargin, kGridTop - 20.0f + i * 112.0f, kW - 2.0f * Theme::kMargin, 90.0f};
+        const FRect rc{Theme::kMargin, kGridTop - 20.0f + i * 100.0f, kW - 2.0f * Theme::kMargin, 82.0f};
         Theme::inkBox(r, rc, on ? Theme::Yellow : Theme::White, on ? 5.0f : 3.0f, on ? 8.0f : 4.0f);
-        AppFont::draw(r, Theme::upper(labels[i]), rc.x + 26.0f, rc.y + 22.0f, 40.0f, Theme::Ink, D);
+        AppFont::draw(r, Theme::upper(labels[i]), rc.x + 26.0f, rc.y + 20.0f, 38.0f, Theme::Ink, D);
         std::string value;
         if (i == kRowTurn) value = m_turnStyle == "slide" ? "SLIDE" : m_turnStyle == "none" ? "NONE" : "CURL";
         else if (i == kRowDirection) value = m_rtl ? "RIGHT TO LEFT" : "LEFT TO RIGHT";
+        else if (i == kRowAttract) value = m_attractAfter <= 0.0f ? "OFF" : "AFTER " + std::to_string((int)(m_attractAfter / 60)) + " MIN";
         else if (i == kRowUpdates) value = updateKnown ? "V" + known + "!" : "V" + std::string(kVersion);
         if (!value.empty()) {
-            const bool choice = i == kRowTurn || i == kRowDirection;
+            const bool choice = i == kRowTurn || i == kRowDirection || i == kRowAttract;
             const std::string v = choice && on ? "< " + value + " >" : value;
-            AppFont::drawRight(r, v, rc.x + rc.w - 26.0f, rc.y + 26.0f, 34.0f, i == kRowUpdates && updateKnown ? Theme::Red : Theme::Blue, D);
+            AppFont::drawRight(r, v, rc.x + rc.w - 26.0f, rc.y + 22.0f, 34.0f, i == kRowUpdates && updateKnown ? Theme::Red : Theme::Blue, D);
         }
     }
     const char* notes[kSetRows] = {
@@ -1308,11 +1377,12 @@ void App::renderSettings() {
         "Get the newest version from GitHub.",
         "How a page turns: a curl, a slide, or straight to the next.",
         "Right to left swaps the flippers, for manga.",
+        "Left alone in the library, comics read themselves.",
         "Clears Continue and every book's place.",
         "Draws every cover again from its book.",
         "Version, license and the people behind it.",
     };
-    AppFont::drawCentered(r, notes[m_setSel], kW * 0.5f, kGridTop - 20.0f + kSetRows * 112.0f + 6.0f, Theme::Type::Small, Theme::Muted);
+    AppFont::drawCentered(r, notes[m_setSel], kW * 0.5f, kGridTop - 20.0f + kSetRows * 100.0f + 4.0f, Theme::Type::Small, Theme::Muted);
 }
 
 // Markdown-ish release notes as plain lines: markers dropped, wrapped to width.
@@ -1553,6 +1623,13 @@ void App::renderReader() {
                                   Theme::Type::Heading, Theme::Ink, D);
             Theme::progress(r, {rc.x + 28.0f, rc.y + 70.0f, rc.w - 56.0f, 18.0f}, (m_page + 1) / (float)m_pagesN);
         }
+    }
+    if (m_attract) {
+        // It's a show: say so, and how to stop it.
+        const float pulse = 0.5f + 0.5f * std::sin(m_clock * 3.0f);
+        const FRect cap{(kW - 440.0f) * 0.5f, kH - 96.0f, 440.0f, 60.0f};
+        Theme::inkBox(r, cap, Gfx::mix(Theme::Yellow, Theme::White, pulse * 0.35f), 3.0f, 5.0f);
+        AppFont::drawCentered(r, "PRESS ANY BUTTON TO READ", kW * 0.5f, cap.y + 14.0f, 32.0f, Theme::Ink, AppFont::Face::Display);
     }
     if (m_zoom > 1.0f) {
         // How far in, and how to get back.

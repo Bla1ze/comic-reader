@@ -28,8 +28,11 @@ on the DMD.
 - **Settings:** Wi-Fi upload (open the address shown on any phone or computer on
   the same network, enter the PIN, drop files or a folder of pages), Check for
   updates (from this repo's releases; your books and places are kept), Page turn,
-  Reading direction (right to left for manga), Forget reading history, Redraw
-  covers, About.
+  Reading direction (right to left for manga), Attract mode, Forget reading
+  history, Redraw covers, About.
+- **Attract mode:** after 5 idle minutes in the library (or 10, or off), a random
+  comic reads itself at a page every 10 seconds; any button stops it. It isn't
+  saved as reading, so Continue doesn't change.
 
 ## Controls
 
