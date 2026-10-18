@@ -1,0 +1,9 @@
+<root>
+    <name>Comic Reader</name>
+    <developer>Bla1ze</developer>
+    <category>Media</category>
+    <year>2026</year>
+    <copyright>Bla1ze</copyright>
+    <description>Read comics and manuals on your cabinet: PDF, CBZ, CBR and pictures. Pages on the playfield, the cover on the backglass. Send books from a phone or computer with Wi-Fi upload.</description>
+    <logging>false</logging>
+</root>

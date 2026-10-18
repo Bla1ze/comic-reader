@@ -1,0 +1,20 @@
+Comic Reader is free software under the GNU Affero General Public License,
+version 3 (Comic-Reader-and-MuPDF-AGPL-3.0.txt). Source code:
+https://github.com/Bla1ze/comic-reader
+
+It includes:
+  MuPDF 1.28.5, (c) Artifex Software, AGPL-3.0, with a small change to skip
+    hidden files in comic archives (tools/patches in the source).
+    https://mupdf.com
+  libarchive 3.8.10 (RAR support), BSD-style license.
+  From MuPDF's third-party folder: FreeType (FreeType License), libjpeg
+    (Independent JPEG Group; "this software is based in part on the work of
+    the Independent JPEG Group"), Little CMS (MIT), zlib, jbig2dec (AGPL-3.0),
+    OpenJPEG (BSD 2-clause).
+  Fonts: URW base-35 (Nimbus) and Noto / SIL fonts bundled in MuPDF, Noto
+    Sans, Bebas Neue, VT323 and Press Start 2P, all under the SIL Open Font
+    License.
+  The controls helper and display profiles are based on the AtGames External
+    Applications SDK (https://www.atgames.net/features/external-apps),
+    modified, with attribution to AtGames; the panel and drawing code comes
+    from Retro Launcher (GPL-3.0, same author), relicensed here under AGPL-3.0.

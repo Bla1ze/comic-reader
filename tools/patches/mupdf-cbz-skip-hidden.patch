@@ -1,0 +1,15 @@
+--- a/source/cbz/mucbz.c	2026-10-18 01:16:36
++++ b/source/cbz/mucbz.c	2026-10-18 01:16:36
+@@ -129,6 +129,12 @@
+ 	{
+ 		const char *name = fz_list_archive_entry(ctx, arch, i);
+ 		const char *ext = name ? strrchr(name, '.') : NULL;
++		const char *base = name ? strrchr(name, '/') : NULL;
++		/* Comic Reader: skip macOS resource forks (__MACOSX/._page.jpg) and
++		 * other hidden files, which carry image extensions but no images. */
++		base = base ? base + 1 : name;
++		if (name && (strstr(name, "__MACOSX/") || base[0] == '.'))
++			continue;
+ 		for (k = 0; cbz_ext_list[k]; k++)
+ 		{
+ 			if (ext && !fz_strcasecmp(ext, cbz_ext_list[k]))
