@@ -1,5 +1,4 @@
 #include "PanelFont.h"
-#include "Theme.h"
 
 // Implementation of stb_truetype is compiled in AppFont.cpp; we only consume it.
 // The include resolves via the sdk/leaderboard/vendor include dir (see CMake).
@@ -12,10 +11,8 @@ namespace PanelFont {
 namespace {
 
 extern "C" {
-extern const unsigned char _binary_NotoSans_Regular_ttf_start[];
-extern const unsigned char _binary_BebasNeue_Regular_ttf_start[];
-extern const unsigned char _binary_VT323_Regular_ttf_start[];
-extern const unsigned char _binary_PressStart2P_Regular_ttf_start[];
+extern const unsigned char _binary_ComicNeue_Bold_ttf_start[];
+extern const unsigned char _binary_Bangers_Regular_ttf_start[];
 }
 
 // One stbtt_fontinfo per face, initialized on first use from the embedded bytes.
@@ -27,15 +24,13 @@ const stbtt_fontinfo& font(Face face)
     static bool dispInit = false;
     if (face == Face::Display) {
         if (!dispInit) {
-            stbtt_InitFont(&disp, Theme::style() == Theme::Style::Attract ? _binary_PressStart2P_Regular_ttf_start
-                                                                          : _binary_BebasNeue_Regular_ttf_start, 0);
+            stbtt_InitFont(&disp, _binary_Bangers_Regular_ttf_start, 0);
             dispInit = true;
         }
         return disp;
     }
     if (!bodyInit) {
-        stbtt_InitFont(&body, Theme::style() == Theme::Style::Attract ? _binary_VT323_Regular_ttf_start
-                                                                      : _binary_NotoSans_Regular_ttf_start, 0);
+        stbtt_InitFont(&body, _binary_ComicNeue_Bold_ttf_start, 0);
         bodyInit = true;
     }
     return body;

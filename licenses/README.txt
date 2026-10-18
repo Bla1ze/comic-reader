@@ -13,9 +13,8 @@ It includes:
     OpenJPEG (BSD 2-clause).
   The app's menu art uses the "auto_stories" symbol from Google's Material
     Symbols (Apache-2.0).
-  Fonts: URW base-35 (Nimbus) and Noto / SIL fonts bundled in MuPDF, Noto
-    Sans, Bebas Neue, VT323 and Press Start 2P, all under the SIL Open Font
-    License.
+  Fonts: URW base-35 (Nimbus) and Noto / SIL fonts bundled in MuPDF, Bangers
+    and Comic Neue, all under the SIL Open Font License.
   The controls helper and display profiles are based on the AtGames External
     Applications SDK (https://www.atgames.net/features/external-apps),
     modified, with attribution to AtGames; the panel and drawing code comes

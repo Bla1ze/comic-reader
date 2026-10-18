@@ -22,11 +22,10 @@ foreach(lib mupdf mupdf-third archive)
     endif()
 endforeach()
 
-# Fonts embedded in the ELF (Retro Launcher's set; the Attract pair is unused
-# but Theme still references it).
+# Fonts embedded in the ELF: Comic Neue Bold (body text) and Bangers (lettering).
 set(FONT_ASSET_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts")
 set(FONT_OBJECTS "")
-foreach(font NotoSans-Regular BebasNeue-Regular VT323-Regular PressStart2P-Regular)
+foreach(font ComicNeue-Bold Bangers-Regular)
     set(obj "${CMAKE_CURRENT_BINARY_DIR}/${font}.o")
     add_custom_command(
         OUTPUT "${obj}"

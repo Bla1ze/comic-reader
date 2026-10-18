@@ -44,40 +44,47 @@ const char* kPage = R"HTML(<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Comic Reader Wi-Fi upload</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0e0b1f;--card:#1a1536;--line:#2c2552;--text:#eef0f8;--dim:#9aa0bd;--teal:#2bc7b8;--violet:#7c5ce8;--rose:#ef5c78;--gold:#f5d65f}
+:root{--paper:#f4e8c8;--dot:#e2cca0;--ink:#181412;--red:#d6242a;--yellow:#ffd426;--blue:#1e56a8;--white:#fffbf0;--muted:#705c42}
 *{box-sizing:border-box}
-body{margin:0;background:radial-gradient(1200px 600px at 10% -10%,#2a1a5e 0,transparent 60%),var(--bg);color:var(--text);
- font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh}
-main{max-width:760px;margin:0 auto;padding:24px 16px 60px;text-align:center}
-h1{font-size:26px;margin:4px 0 2px;letter-spacing:.5px}
-h1 span{color:var(--teal)}
-.sub{color:var(--dim);margin:0 0 20px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin:14px 0}
-label{display:block;color:var(--dim);font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
-select,input{width:100%;text-align:center;text-align-last:center;font:inherit;color:var(--text);background:#120e28;border:1px solid var(--line);border-radius:10px;padding:12px}
-input.pin{font-size:32px;letter-spacing:12px;text-align:center}
-button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:12px 18px;cursor:pointer;color:#0e0b1f;background:var(--teal)}
-button.alt{background:#2c2552;color:var(--text)}
-.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+body{margin:0;color:var(--ink);font:700 17px/1.45 'Comic Neue','Comic Sans MS',system-ui,sans-serif;min-height:100vh;
+ background:radial-gradient(circle,var(--dot) 2.6px,transparent 3.2px) 0 0/14px 14px,var(--paper)}
+main{max-width:760px;margin:0 auto;padding:22px 16px 60px;text-align:center}
+.bang{font-family:Bangers,Impact,'Arial Black',sans-serif;letter-spacing:.04em;font-weight:400}
+h1{margin:4px 0 6px;padding:14px 10px 8px;background:var(--red);border:4px solid var(--ink);box-shadow:6px 6px 0 var(--ink);
+ color:var(--yellow);font:400 46px/1 Bangers,Impact,sans-serif;letter-spacing:.04em;
+ text-shadow:-3px -3px 0 var(--ink),3px -3px 0 var(--ink),-3px 3px 0 var(--ink),3px 3px 0 var(--ink),5px 5px 0 var(--ink)}
+h1 span{color:#fff}
+.sub{margin:16px 0 18px;display:inline-block;background:var(--white);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:6px 14px}
+.card{background:var(--white);border:4px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:18px;margin:18px 0}
+label{display:block;font:400 20px/1 Bangers,Impact,sans-serif;letter-spacing:.06em;color:var(--red);margin-bottom:10px}
+select,input{width:100%;text-align:center;text-align-last:center;font:inherit;color:var(--ink);background:#fff;border:3px solid var(--ink);padding:12px}
+input.pin{font:400 40px/1 Bangers,Impact,sans-serif;letter-spacing:14px;text-align:center}
+button{font:400 22px/1 Bangers,Impact,sans-serif;letter-spacing:.06em;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:12px 20px;cursor:pointer;color:var(--ink);background:var(--yellow)}
+button:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+button.alt{background:var(--white)}
+.row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:560px){.two{grid-template-columns:1fr}}
-.drop{border:2px dashed #3d3470;border-radius:14px;padding:34px 16px;text-align:center;color:var(--dim);transition:.15s}
-.drop.on{border-color:var(--teal);color:var(--text);background:#16123a}
-.hint{color:var(--dim);font-size:14px;margin-top:10px}
-.item{display:flex;align-items:center;gap:12px;text-align:left;padding:10px 0;border-top:1px solid var(--line)}
+.drop{border:4px dashed var(--ink);padding:34px 16px;text-align:center;background:var(--paper);font:400 30px/1.1 Bangers,Impact,sans-serif;letter-spacing:.05em;transition:.15s}
+.drop .hint{font:700 15px/1.4 'Comic Neue',sans-serif;letter-spacing:0}
+.drop.on{background:var(--yellow)}
+.hint{color:var(--muted);font-size:15px;margin-top:10px}
+.item{display:flex;align-items:center;gap:12px;text-align:left;padding:10px 0;border-top:3px solid var(--ink)}
 .item:first-child{border-top:0}
 .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.state{font-size:14px;color:var(--dim);white-space:nowrap}
-.state.ok{color:var(--teal)}.state.err{color:var(--rose)}.state.skip{color:var(--gold)}
-.bar{height:4px;background:#2c2552;border-radius:2px;margin-top:6px;overflow:hidden}
-.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--violet),var(--teal))}
-.err{color:var(--rose)}
+.state{font:400 19px/1 Bangers,Impact,sans-serif;letter-spacing:.05em;color:var(--muted);white-space:nowrap}
+.state.ok{color:var(--blue)}.state.err{color:var(--red)}.state.skip{color:#a87400}
+.bar{height:12px;background:#fff;border:2px solid var(--ink);margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--red)}
+.err{color:var(--red)}
 .hidden{display:none}
-footer{color:var(--dim);font-size:13px;margin-top:28px}
-footer a{color:var(--teal)}
+footer{color:var(--muted);font-size:14px;margin-top:28px}
+footer a{color:var(--blue)}
 </style></head><body><main>
-<h1>Comic Reader <span>Wi-Fi upload</span></h1>
+<h1>Comic Reader! <span>Wi-Fi upload</span></h1>
 <p class="sub">Send comics and manuals from this device to the cabinet.</p>
 
 <div id="login" class="card">

@@ -4,7 +4,6 @@
 // Uses stb_truetype (public domain / MIT, src/vendor/stb_truetype.h).
 
 #include "AppFont.h"
-#include "Theme.h"
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "vendor/stb_truetype.h"
@@ -18,27 +17,18 @@ namespace {
 // Both TTFs are objcopy'd directly into the ELF by CMake (see CMakeLists.txt).
 // No font file or font library is needed at runtime.
 extern "C" {
-extern const unsigned char _binary_NotoSans_Regular_ttf_start[];
-extern const unsigned char _binary_BebasNeue_Regular_ttf_start[];
-extern const unsigned char _binary_VT323_Regular_ttf_start[];
-extern const unsigned char _binary_PressStart2P_Regular_ttf_start[];
+extern const unsigned char _binary_ComicNeue_Bold_ttf_start[];
+extern const unsigned char _binary_Bangers_Regular_ttf_start[];
 }
 
 constexpr int kFirstCharacter = 32;
 constexpr int kCharacterCount = 96;
 
-// Bake each face near the size it is actually drawn at, so glyphs render close
-// to 1:1 on screen instead of being minified ~2-3x (which aliases and made the
-// small text look wavy/uneven — linear filtering alone can't fix that much
-// minification without mipmaps). Body (Noto) is only used for small text
-// (hints/lists, ~50-90px on the 3x canvas), so it bakes small; Display (Bebas)
-// is used for large headers/titles, so it bakes large.
-constexpr float kBodyBake = 72.0f;
+// Bake each face near the size it is drawn at, so glyphs render close to 1:1
+// (the canvas is 3x on a 4KP): Body (Comic Neue Bold) is small text, Display
+// (Bangers) the lettering.
+constexpr float kBodyBake = 76.0f;
 constexpr float kDisplayBake = 160.0f;
-// Attract's faces: VT323 sets small (run larger), Press Start 2P is square
-// pixels at about one em a glyph, so a smaller bake is plenty.
-constexpr float kAttractBodyBake = 80.0f;
-constexpr float kAttractDisplayBake = 96.0f;
 constexpr int kAtlasSize = 2048;
 
 struct Font {
@@ -48,23 +38,17 @@ struct Font {
     bool loaded = false;
 };
 
-// Index by (int)Face: 0 = Body (Noto Sans), 1 = Display (Bebas Neue).
+// Index by (int)Face: 0 = Body (Comic Neue Bold), 1 = Display (Bangers).
 Font g_fonts[2];
 
-// The active theme's pair (Theme::style() is set at startup, before any text).
 const unsigned char* faceData(Face face)
 {
-    if (Theme::style() == Theme::Style::Attract)
-        return (face == Face::Display) ? _binary_PressStart2P_Regular_ttf_start : _binary_VT323_Regular_ttf_start;
-    return (face == Face::Display)
-        ? _binary_BebasNeue_Regular_ttf_start
-        : _binary_NotoSans_Regular_ttf_start;
+    return face == Face::Display ? _binary_Bangers_Regular_ttf_start : _binary_ComicNeue_Bold_ttf_start;
 }
 
 float bakeSize(Face face)
 {
-    if (Theme::style() == Theme::Style::Attract) return (face == Face::Display) ? kAttractDisplayBake : kAttractBodyBake;
-    return (face == Face::Display) ? kDisplayBake : kBodyBake;
+    return face == Face::Display ? kDisplayBake : kBodyBake;
 }
 
 Font& ensureLoaded(SDL_Renderer* renderer, Face face)

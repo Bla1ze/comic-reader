@@ -6,7 +6,7 @@
 // CPU text rasterizer for the secondary panels. The panels are raw framebuffers
 // (not SDL renderers), so AppFont's texture-atlas path can't reach them — this
 // draws glyphs straight into an RGBA byte canvas with stb_truetype. It reuses
-// the same two TTFs already objcopy'd into the ELF (Noto Sans + Bebas Neue), so
+// the same two TTFs already objcopy'd into the ELF (Comic Neue Bold + Bangers), so
 // no extra assets are needed. The stb_truetype implementation lives in
 // AppFont.cpp; this only uses it.
 namespace PanelFont {

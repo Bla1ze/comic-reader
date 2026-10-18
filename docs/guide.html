@@ -1,39 +1,44 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <title>Comic Reader Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=block" rel="stylesheet">
 <style>
 @page { size: 6.75in 10.25in; margin: 0; }
 * { box-sizing: border-box; }
-body { margin: 0; font: 15px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif; color: #e9edf6; background: #0b0f1a; }
-.page { width: 6.75in; height: 10.25in; padding: 0.6in 0.6in 0.5in; page-break-after: always; position: relative; overflow: hidden;
-  background: radial-gradient(5in 4in at 10% 0%, rgba(43,199,184,.22), transparent 70%),
-              radial-gradient(5in 4in at 100% 100%, rgba(124,92,232,.28), transparent 70%), #0b0f1a; }
+body { margin: 0; font: 700 15px/1.5 'Comic Neue', 'Comic Sans MS', sans-serif; color: #181412; }
+.page { width: 6.75in; height: 10.25in; padding: 0.55in 0.55in 0.5in; page-break-after: always; position: relative; overflow: hidden;
+  background: radial-gradient(circle, #e2cca0 2.4px, transparent 3px) 0 0/13px 13px, #f4e8c8; }
 .page:last-child { page-break-after: auto; }
-.cover { display: flex; flex-direction: column; justify-content: center; text-align: center; }
-.kicker { letter-spacing: .3em; text-transform: uppercase; color: #2bc7b8; font-size: 13px; font-weight: 700; }
-h1 { font-size: 64px; line-height: .95; margin: 14px 0 18px; letter-spacing: .02em; text-transform: uppercase; font-weight: 800; }
-h1 span { color: #2bc7b8; }
-.lead { color: #c3cadb; font-size: 18px; max-width: 4.4in; margin: 0 auto; }
-.screens { display: flex; gap: 14px; justify-content: center; margin-top: 40px; }
-.screen { border: 2px solid rgba(255,255,255,.18); border-radius: 10px; padding: 10px 12px; font-size: 12px; color: #c3cadb; width: 1.6in; }
-.screen b { display: block; color: #f5d65f; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
-h2 { font-size: 26px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .04em; }
-h2 small { display: block; font-size: 12px; color: #2bc7b8; letter-spacing: .3em; margin-bottom: 4px; }
-.rule { height: 3px; width: 70px; background: linear-gradient(90deg, #2bc7b8, #7c5ce8); border-radius: 2px; margin: 10px 0 18px; }
-table { width: 100%; border-collapse: collapse; margin: 6px 0 22px; }
-th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid rgba(255,255,255,.12); vertical-align: top; }
-th { color: #9aa7bd; font-size: 11px; letter-spacing: .15em; text-transform: uppercase; }
-td:first-child { color: #f5d65f; font-weight: 700; white-space: nowrap; }
-.card { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 14px 16px; margin: 0 0 14px; }
-.card b { color: #2bc7b8; }
-ol { padding-left: 20px; margin: 6px 0 18px; } li { margin: 6px 0; }
-code { font: 13px/1.4 Menlo, monospace; color: #f5d65f; }
-.foot { position: absolute; left: .6in; right: .6in; bottom: .35in; font-size: 11px; color: #6b7590; display: flex; justify-content: space-between; }
+.cover { display: flex; flex-direction: column; justify-content: center; text-align: center;
+  background: radial-gradient(circle, #b0161e 4px, transparent 4.8px) 0 0/18px 18px, #d6242a; }
+.bang, h1, h2, th, td:first-child, .screen b, .kicker { font-family: Bangers, Impact, sans-serif; font-weight: 400; letter-spacing: .05em; }
+.kicker { display: inline-block; margin: 0 auto; background: #fffbf0; border: 3px solid #181412; box-shadow: 4px 4px 0 #181412; padding: 6px 16px; font-size: 20px; }
+h1 { font-size: 92px; line-height: .9; margin: 22px 0 22px; color: #ffd426;
+  text-shadow: -4px -4px 0 #181412, 4px -4px 0 #181412, -4px 4px 0 #181412, 4px 4px 0 #181412, 8px 8px 0 #181412; }
+h1 span { color: #fffbf0; }
+.lead { background: #fffbf0; border: 4px solid #181412; box-shadow: 6px 6px 0 #181412; font-size: 17px; max-width: 4.6in; margin: 0 auto; padding: 14px 18px; }
+.screens { display: flex; gap: 14px; justify-content: center; margin-top: 34px; }
+.screen { background: #ffd426; border: 3px solid #181412; box-shadow: 4px 4px 0 #181412; padding: 10px 12px; font-size: 12px; width: 1.6in; }
+.screen b { display: block; color: #d6242a; font-size: 20px; margin-bottom: 4px; }
+h2 { font-size: 40px; margin: 0 0 4px; color: #d6242a; text-shadow: 2px 2px 0 #181412; }
+h2 small { display: inline-block; font-size: 16px; color: #181412; background: #ffd426; border: 2px solid #181412; padding: 2px 10px; margin-bottom: 8px; text-shadow: none; }
+.rule { display: none; }
+table { width: 100%; border-collapse: collapse; margin: 8px 0 24px; background: #fffbf0; border: 3px solid #181412; box-shadow: 5px 5px 0 #181412; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 2px solid #181412; vertical-align: top; }
+th { font-size: 17px; background: #ffd426; }
+td:first-child { color: #d6242a; font-size: 20px; white-space: nowrap; }
+.card { background: #fffbf0; border: 3px solid #181412; box-shadow: 5px 5px 0 #181412; padding: 12px 16px; margin: 0 0 16px; }
+.card b { color: #1e56a8; }
+ol { padding-left: 22px; margin: 6px 0 20px; background: #fffbf0; border: 3px solid #181412; box-shadow: 5px 5px 0 #181412; padding: 12px 16px 12px 40px; }
+li { margin: 6px 0; }
+code { font: 13px/1.4 Menlo, monospace; color: #d6242a; }
+.foot { position: absolute; left: .55in; right: .55in; bottom: .3in; font-size: 12px; color: #705c42; display: flex; justify-content: space-between; }
+.cover .foot { color: #ffd426; }
 </style></head><body>
 
 <section class="page cover">
-  <div class="kicker">Comic Reader</div>
-  <h1>The <span>Guide</span></h1>
+  <div><span class="kicker">Comic Reader</span></div>
+  <h1>The <span>Guide!</span></h1>
   <p class="lead">Comics and manuals on your cabinet. Pages on the playfield, the cover on the backglass, where you are on the DMD.</p>
   <div class="screens">
     <div class="screen"><b>Playfield</b>Your library, and the page you're reading at full resolution.</div>

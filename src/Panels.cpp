@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cerrno>
 #include <chrono>
 #include <cmath>
@@ -24,12 +25,14 @@ namespace {
 
 using Library::log;
 
-constexpr uint8_t kInk[3] = {245, 246, 250};
-constexpr uint8_t kGold[3] = {245, 214, 95};
-constexpr uint8_t kTeal[3] = {43, 199, 184};
-constexpr uint8_t kViolet[3] = {124, 92, 232};
-constexpr uint8_t kGradTop[3] = {16, 30, 46};
-constexpr uint8_t kGradBot[3] = {30, 16, 50};
+// The comic palette (Theme.h's print colors).
+constexpr uint8_t kInk[3] = {24, 20, 18};
+constexpr uint8_t kRed[3] = {214, 36, 42};
+constexpr uint8_t kRedDot[3] = {176, 22, 30};
+constexpr uint8_t kYellow[3] = {255, 212, 38};
+constexpr uint8_t kWhite[3] = {255, 251, 240};
+constexpr uint8_t kPaper[3] = {244, 232, 200};
+constexpr uint8_t kPaperDot[3] = {226, 204, 160};
 
 int findCard0Fd() {
     DIR* d = ::opendir("/proc/self/fd");
@@ -48,51 +51,50 @@ int findCard0Fd() {
     return best;
 }
 
-void gradient(std::vector<uint8_t>& c, int W, int H) {
-    for (int y = 0; y < H; ++y) {
-        float t = H > 1 ? (float)y / (H - 1) : 0.0f;
-        uint8_t r = (uint8_t)(kGradTop[0] + (kGradBot[0] - kGradTop[0]) * t),
-                g = (uint8_t)(kGradTop[1] + (kGradBot[1] - kGradTop[1]) * t),
-                b = (uint8_t)(kGradTop[2] + (kGradBot[2] - kGradTop[2]) * t);
-        uint8_t* row = &c[(size_t)y * W * 4];
-        for (int x = 0; x < W; ++x) { row[x * 4] = r; row[x * 4 + 1] = g; row[x * 4 + 2] = b; row[x * 4 + 3] = 255; }
-    }
-}
-
-void glow(std::vector<uint8_t>& c, int W, int H, float cx, float cy, float radius, const uint8_t col[3], float strength) {
-    int x0 = std::max(0, (int)(cx - radius)), x1 = std::min(W, (int)(cx + radius));
-    int y0 = std::max(0, (int)(cy - radius)), y1 = std::min(H, (int)(cy + radius));
-    for (int y = y0; y < y1; ++y)
-        for (int x = x0; x < x1; ++x) {
-            float d = std::sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / radius;
-            if (d >= 1.0f) continue;
-            float a = (1.0f - d) * (1.0f - d) * strength;
+// A flat color with halftone dots on a 45-degree grid, bigger toward the
+// left and right ends (like a printed tint).
+void halftone(std::vector<uint8_t>& c, int W, int H, const uint8_t base[3], const uint8_t dot[3], float cell) {
+    for (int y = 0; y < H; ++y)
+        for (int x = 0; x < W; ++x) {
+            const float u = (float)x / W;
+            const float density = 0.15f + 0.85f * std::max(0.0f, std::fabs(u - 0.5f) * 2.0f - 0.25f) / 0.75f;
+            const float rx = (x + y) * 0.70710678f, ry = (x - y) * 0.70710678f + 100000.0f;
+            const float fx = std::fmod(rx, cell) - cell * 0.5f, fy = std::fmod(ry, cell) - cell * 0.5f;
+            const float a = std::min(1.0f, std::max(0.0f, cell * 0.48f * std::sqrt(density) - std::sqrt(fx * fx + fy * fy) + 0.5f));
             uint8_t* p = &c[((size_t)y * W + x) * 4];
-            for (int k = 0; k < 3; ++k) p[k] = (uint8_t)std::min(255.0f, p[k] + col[k] * a);
+            for (int k = 0; k < 3; ++k) p[k] = (uint8_t)(base[k] + (dot[k] - base[k]) * a);
+            p[3] = 255;
         }
 }
 
 // Text with its left edge at x (align 0), centered on x (1), or ending at x (2).
 void text(std::vector<uint8_t>& c, int W, int H, const std::string& s, float x, float top, float px, const uint8_t col[3],
-          PanelFont::Face face, float maxW, int align = 1) {
+          PanelFont::Face face, float maxW, int align = 1, float outline = 0.0f) {
     if (s.empty()) return;
     float w = PanelFont::measure(s, px, face);
     if (w > maxW && w > 0) { px *= maxW / w; w = maxW; }
     float left = align == 0 ? x : align == 1 ? x - w * 0.5f : x - w;
+    if (outline > 0.0f) {  // comic lettering: a black outline and a drop shadow
+        const float o = outline;
+        PanelFont::draw(c.data(), W, H, s, left + o * 1.8f, top + o * 1.8f, px, kInk[0], kInk[1], kInk[2], face);
+        for (int dy = -1; dy <= 1; ++dy)
+            for (int dx = -1; dx <= 1; ++dx)
+                if (dx || dy) PanelFont::draw(c.data(), W, H, s, left + dx * o, top + dy * o, px, kInk[0], kInk[1], kInk[2], face);
+    }
     PanelFont::draw(c.data(), W, H, s, left, top, px, col[0], col[1], col[2], face);
 }
 
+// Progress: a black outline, white, filled yellow.
 void bar(std::vector<uint8_t>& c, int W, int H, int x, int y, int w, int h, float f) {
+    const int ink = std::max(3, h / 5);
     for (int yy = y; yy < y + h && yy < H; ++yy)
         for (int xx = x; xx < x + w && xx < W; ++xx) {
             if (xx < 0 || yy < 0) continue;
             uint8_t* p = &c[((size_t)yy * W + xx) * 4];
-            const bool on = xx < x + (int)(w * f);
-            const float t = w > 1 ? (float)(xx - x) / (w - 1) : 0.0f;
-            for (int k = 0; k < 3; ++k) {
-                uint8_t v = on ? (uint8_t)(kTeal[k] + (kViolet[k] - kTeal[k]) * t) : (uint8_t)(p[k] * 0.6f + 255 * 0.12f);
-                p[k] = v;
-            }
+            const bool edge = yy < y + ink || yy >= y + h - ink || xx < x + ink || xx >= x + w - ink;
+            const bool on = xx < x + ink + (int)((w - 2 * ink) * f);
+            const uint8_t* col = edge ? kInk : on ? kYellow : kWhite;
+            p[0] = col[0]; p[1] = col[1]; p[2] = col[2];
         }
 }
 
@@ -175,6 +177,11 @@ int blitFit(std::vector<uint8_t>& c, int W, int H, const std::vector<uint8_t>& i
         }
     }
     return ox + dw;
+}
+
+std::string Theme_upper(std::string s) {
+    for (char& ch : s) ch = (char)std::toupper((unsigned char)ch);
+    return s;
 }
 
 std::string pageLine(int page, int pages) {
@@ -366,14 +373,9 @@ void Panels::composeBackglass(Panel& p, const Item& item, const std::vector<uint
     const int W = p.vw, H = p.vh;
     std::vector<uint8_t>& c = p.canvas;
     if (cover.empty()) {
-        gradient(c, W, H);
-        glow(c, W, H, W * 0.18f, H * 0.2f, H * 0.9f, kTeal, 0.22f);
-        glow(c, W, H, W * 0.85f, H * 0.85f, H * 1.0f, kViolet, 0.25f);
-        text(c, W, H, item.title.empty() ? "COMIC READER" : item.subtitle, W * 0.5f, H * 0.22f, H * 0.06f, kTeal,
-             PanelFont::Face::Display, W * 0.8f);
-        text(c, W, H, item.title.empty() ? "Pick a book on the playfield" : item.title, W * 0.5f, H * 0.38f, H * 0.14f, kInk,
-             PanelFont::Face::Display, W * 0.88f);
-        text(c, W, H, pageLine(item.page, item.pages), W * 0.5f, H * 0.62f, H * 0.055f, kGold, PanelFont::Face::Body, W * 0.8f);
+        halftone(c, W, H, kPaper, kPaperDot, H / 40.0f);
+        text(c, W, H, "COMIC READER!", W * 0.5f, H * 0.3f, H * 0.26f, kYellow, PanelFont::Face::Display, W * 0.88f, 1, H / 160.0f);
+        text(c, W, H, "PICK A BOOK ON THE PLAYFIELD", W * 0.5f, H * 0.66f, H * 0.07f, kRed, PanelFont::Face::Display, W * 0.8f);
         return;
     }
     // Just the cover, centered over a blurred copy of itself: the words are on the DMD.
@@ -385,30 +387,30 @@ void Panels::composeBackglass(Panel& p, const Item& item, const std::vector<uint
 void Panels::composeDmd(Panel& p, const Item& item) {
     const int W = p.vw, H = p.vh;
     std::vector<uint8_t>& c = p.canvas;
-    // The lit background is the slow part (365 ms on the cabinet's small
-    // cores): drawn once, then copied for every page.
+    // The halftone is the slow part on the cabinet's small cores: drawn once,
+    // then copied for every page.
     if (m_dmdGround.size() != c.size()) {
         m_dmdGround.assign(c.size(), 0);
-        gradient(m_dmdGround, W, H);
-        glow(m_dmdGround, W, H, W * 0.1f, H * 0.5f, H * 1.4f, kTeal, 0.14f);
-        glow(m_dmdGround, W, H, W * 0.92f, H * 0.5f, H * 1.4f, kViolet, 0.16f);
+        halftone(m_dmdGround, W, H, kRed, kRedDot, H / 22.0f);
     }
     c = m_dmdGround;
+    const float o = H / 90.0f;  // lettering outline
     if (item.title.empty()) {
-        text(c, W, H, "COMIC READER", W * 0.5f, H * 0.3f, H * 0.36f, kInk, PanelFont::Face::Display, W * 0.9f);
+        text(c, W, H, "COMIC READER!", W * 0.5f, H * 0.26f, H * 0.42f, kYellow, PanelFont::Face::Display, W * 0.9f, 1, o);
         return;
     }
     if (item.reading && item.pages > 0) {
-        text(c, W, H, item.title, W * 0.5f, H * 0.1f, H * 0.2f, kInk, PanelFont::Face::Display, W * 0.92f);
+        text(c, W, H, item.title, W * 0.5f, H * 0.08f, H * 0.2f, kWhite, PanelFont::Face::Display, W * 0.92f, 1, o * 0.7f);
         char big[32];
         std::snprintf(big, sizeof(big), "%d / %d", item.page + 1, item.pages);
-        text(c, W, H, big, W * 0.5f, H * 0.36f, H * 0.34f, kGold, PanelFont::Face::Display, W * 0.9f);
-        bar(c, W, H, (int)(W * 0.08f), (int)(H * 0.82f), (int)(W * 0.84f), std::max(6, H / 30), (item.page + 1) / (float)item.pages);
+        text(c, W, H, big, W * 0.5f, H * 0.34f, H * 0.38f, kYellow, PanelFont::Face::Display, W * 0.9f, 1, o);
+        bar(c, W, H, (int)(W * 0.08f), (int)(H * 0.82f), (int)(W * 0.84f), std::max(10, H / 18), (item.page + 1) / (float)item.pages);
         return;
     }
-    text(c, W, H, item.subtitle, W * 0.5f, H * 0.14f, H * 0.16f, kTeal, PanelFont::Face::Display, W * 0.9f);
-    text(c, W, H, item.title, W * 0.5f, H * 0.38f, H * 0.3f, kInk, PanelFont::Face::Display, W * 0.92f);
-    text(c, W, H, pageLine(item.page, item.pages), W * 0.5f, H * 0.76f, H * 0.12f, kGold, PanelFont::Face::Body, W * 0.9f);
+    text(c, W, H, item.subtitle, W * 0.5f, H * 0.1f, H * 0.17f, kWhite, PanelFont::Face::Display, W * 0.9f, 1, o * 0.7f);
+    text(c, W, H, item.title, W * 0.5f, H * 0.36f, H * 0.32f, kYellow, PanelFont::Face::Display, W * 0.92f, 1, o);
+    text(c, W, H, Theme_upper(pageLine(item.page, item.pages)), W * 0.5f, H * 0.76f, H * 0.14f, kWhite, PanelFont::Face::Display,
+         W * 0.9f, 1, o * 0.6f);
 }
 
 void Panels::present(Panel& p) {

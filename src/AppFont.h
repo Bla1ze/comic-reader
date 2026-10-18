@@ -6,8 +6,8 @@
 
 // Text renderer with two embedded typefaces.
 //
-// Body    = Noto Sans (clean, readable) for lists, tables, and hints.
-// Display = Bebas Neue (tall condensed all-caps) for titles, headers, and big
+// Body    = Comic Neue Bold, for titles of books, lists and hints.
+// Display = Bangers (comic lettering), for headers, captions and big
 //           numbers/scores — the "designed" look.
 //
 // Both TTFs are objcopy'd into the ELF by CMake and baked once into a texture

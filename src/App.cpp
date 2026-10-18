@@ -51,8 +51,8 @@ constexpr float kCellW = (kW - 2 * kSide - (kCols - 1) * kGap) / kCols;  // 200
 constexpr float kCoverH = kCellW * 1.5f;                                  // 300
 constexpr float kCellH = kCoverH + 86.0f;
 constexpr float kRowStride = kCellH + 22.0f;
-constexpr float kTabsTop = 182.0f;
-constexpr float kGridTop = 252.0f;
+constexpr float kTabsTop = 150.0f;
+constexpr float kGridTop = 290.0f;
 constexpr float kGridBottom = Theme::kFooterTop - 8.0f;
 
 constexpr size_t kMaxCovers = 90;
@@ -169,6 +169,7 @@ App::~App() {
     for (auto& kv : m_pageTex)
         if (kv.second.tex) SDL_DestroyTexture(kv.second.tex);
     m_panels.reset();
+    Theme::shutdown();
     Gfx::shutdown();
     if (m_canvas) SDL_DestroyTexture(m_canvas);
     if (m_renderer) SDL_DestroyRenderer(m_renderer);
@@ -220,6 +221,7 @@ bool App::initVideo() {
         info.name ? info.name : "?", info.max_texture_width, info.max_texture_height);
     Library::logInputDevices();
     Gfx::init(m_renderer, m_canvasScale);
+    Theme::init(m_renderer, m_canvasScale);
     m_controls.open();
     m_panels.reset(new Panels());
     log("panels: %d up", m_panels->init(m_topo, m_appDir));
@@ -631,58 +633,57 @@ void App::render() {
         renderLibrary();
     }
     SDL_RenderSetScale(m_renderer, m_canvasScale, m_canvasScale);
-    if (m_confirm) Theme::confirmDialog(m_renderer, kW, kH, "Exit Comic Reader?", "Cancel", "Exit", m_confirmSel);
-    if (m_toastTime > 0.0f && !m_toast.empty()) {
-        const float a = std::min(1.0f, m_toastTime / 0.4f);
-        const float tw = AppFont::measureWidth(m_renderer, m_toast, Theme::Type::Small) + 56.0f;
-        const FRect rc{(kW - tw) * 0.5f, Theme::kFooterTop - 96.0f, tw, 56.0f};
-        Gfx::roundRect(m_renderer, rc, 28.0f, {20, 26, 44, (Uint8)(235 * a)});
-        AppFont::drawCentered(m_renderer, m_toast, kW * 0.5f, rc.y + 14.0f, Theme::Type::Small, Gfx::withAlpha(Theme::Text, (Uint8)(255 * a)));
-    }
+    if (m_confirm) Theme::confirmDialog(m_renderer, "Exit Comic Reader?", "Keep reading", "Exit", m_confirmSel);
+    if (m_toastTime > 0.0f) Theme::toast(m_renderer, m_toast, m_toastTime);
     SDL_RenderSetScale(m_renderer, 1.0f, 1.0f);
     SDL_SetRenderTarget(m_renderer, nullptr);
 }
 
 void App::renderLibrary() {
     SDL_Renderer* r = m_renderer;
-    Theme::backgroundAnimated(r, kW, kH, m_clock);
-    if (m_tab == kUpload) {
-        renderUpload();
-    } else {
-        renderGrid();
-    }
-    // Header and tabs over anything scrolled up under them.
-    Theme::vGradient(r, {0.0f, 0.0f, (float)kW, kGridTop - 6.0f}, Theme::BgTop, Gfx::withAlpha(Theme::BgTop, 250));
-    std::string title = kTabNames[m_tab];
-    if (m_tab != kContinue && m_tab != kUpload && m_dir != shelfDir()) title = Library::titleOf(m_dir);
-    Theme::header(r, kW, "Comic Reader", title);
+    Theme::paper(r);
+    if (m_tab == kUpload) renderUpload();
+    else renderGrid();
+    // The masthead and tabs over anything scrolled up under them.
+    SDL_Rect top{0, 0, kW, (int)(kGridTop - 50.0f)};
+    SDL_RenderSetClipRect(r, &top);
+    Theme::paper(r);
+    SDL_RenderSetClipRect(r, nullptr);
+    Theme::masthead(r);
     renderTabs();
+    // Inside a series: its name in a caption box, and where you are.
+    if (m_tab != kUpload && m_tab != kContinue && m_dir != shelfDir()) {
+        const std::string name = Theme::upper(Library::titleOf(m_dir));
+        const float w = std::min(kW - 220.0f, Theme::width(r, name, 30.0f, AppFont::Face::Display) + 40.0f);
+        Theme::inkBox(r, {Theme::kMargin, kTabsTop + 64.0f, w, 46.0f}, Theme::Yellow, 3.0f, 4.0f);
+        AppFont::draw(r, Theme::ellipsize(r, name, w - 30.0f, 30.0f, AppFont::Face::Display), Theme::kMargin + 15.0f,
+                      kTabsTop + 72.0f, 30.0f, Theme::Ink, AppFont::Face::Display);
+    }
+    if (m_tab != kUpload && !m_items.empty()) {
+        const std::string n = std::to_string(m_sel + 1) + " / " + std::to_string(m_items.size());
+        AppFont::drawRight(r, n, kW - Theme::kMargin, kTabsTop + 74.0f, 28.0f, Theme::Muted, AppFont::Face::Display);
+    }
     std::string hints;
-    if (m_tab == kUpload) hints = "LB/RB Shelves   B Exit";
-    else if (m_items.empty()) hints = "LB/RB Shelves   B Exit";
+    if (m_tab == kUpload || m_items.empty()) hints = "LB/RB Shelves   B Exit";
     else hints = std::string("A Read   LB/RB Shelves   ") + (m_dir != shelfDir() && m_tab != kContinue ? "B Back" : "B Exit");
-    Theme::footerHints(r, kW, hints, "");
+    Theme::footerHints(r, hints);
 }
 
 void App::renderTabs() {
     SDL_Renderer* r = m_renderer;
-    const float h = 40.0f, gap = 10.0f, size = Theme::Type::Caption;
+    const float h = 48.0f, gap = 12.0f, size = 28.0f;
+    const AppFont::Face D = AppFont::Face::Display;
     float widths[kTabCount], total = 0.0f;
     for (int i = 0; i < kTabCount; ++i) {
-        widths[i] = AppFont::measureWidth(r, kTabNames[i], size) + 36.0f;
+        widths[i] = Theme::width(r, Theme::upper(kTabNames[i]), size, D) + 34.0f;
         total += widths[i] + (i ? gap : 0.0f);
     }
     float x = (kW - total) * 0.5f;
     for (int i = 0; i < kTabCount; ++i) {
-        const FRect rc{x, kTabsTop, widths[i], h};
         const bool on = i == m_tab;
-        if (on) {
-            Gfx::softRect(r, rc, h * 0.5f, 14.0f, Theme::alpha(Theme::accent(), 70), true);
-            Gfx::roundRect(r, rc, h * 0.5f, Theme::accent());
-        } else {
-            Gfx::roundRect(r, rc, h * 0.5f, {255, 255, 255, 16});
-        }
-        AppFont::drawCentered(r, kTabNames[i], rc.x + rc.w * 0.5f, rc.y + 9.0f, size, on ? Theme::onAccent(Theme::accent()) : Theme::TextDim);
+        const FRect rc{x, kTabsTop - (on ? 4.0f : 0.0f), widths[i], h};
+        Theme::inkBox(r, rc, on ? Theme::Yellow : Theme::White, 3.0f, on ? 5.0f : 3.0f);
+        AppFont::drawCentered(r, Theme::upper(kTabNames[i]), rc.x + rc.w * 0.5f, rc.y + 10.0f, size, on ? Theme::Ink : Theme::Muted, D);
         x += widths[i] + gap;
     }
 }
@@ -691,9 +692,9 @@ void App::renderGrid() {
     SDL_Renderer* r = m_renderer;
     if (m_items.empty()) {
         if (m_tab == kContinue)
-            Theme::emptyState(r, kW, "Nothing to continue", "Books you're partway through show up here.");
+            Theme::emptyState(r, "Nothing to continue!", "Books you're partway through show up here.");
         else
-            Theme::emptyState(r, kW, m_tab == kManuals ? "No manuals yet" : "No comics yet",
+            Theme::emptyState(r, m_tab == kManuals ? "No manuals yet!" : "No comics yet!",
                               std::string("Use Wi-Fi upload, or copy them to ") + shelfDir() + "/ on the stick.");
         return;
     }
@@ -703,133 +704,126 @@ void App::renderGrid() {
     // Covers just below the screen are asked for too, so scrolling finds them ready.
     for (int i = (lastRow + 1) * kCols; i < std::min(n, (lastRow + 2) * kCols); ++i) cover(m_items[(size_t)i].coverRel);
 
-    SDL_Rect clip{0, (int)(kGridTop - 20.0f), kW, (int)(kGridBottom - kGridTop + 20.0f)};
+    SDL_Rect clip{0, (int)(kGridTop - 40.0f), kW, (int)(kGridBottom - kGridTop + 40.0f)};
     SDL_RenderSetClipRect(r, &clip);
-    for (int i = firstRow * kCols; i < std::min(n, (lastRow + 1) * kCols); ++i) {
+    auto tile = [&](int i) {
         const Library::Entry& e = m_items[(size_t)i];
         const int row = i / kCols, col = i % kCols;
         const float x = kSide + col * (kCellW + kGap);
         const float y = kGridTop + row * kRowStride - m_scrollShown;
         const bool sel = i == m_sel;
-        FRect box{x, y, kCellW, kCoverH};
-        if (e.series) {  // a stack of books
-            Gfx::roundRect(r, {box.x + 14.0f, box.y - 12.0f, box.w - 28.0f, box.h}, 10.0f, {255, 255, 255, 22});
-            Gfx::roundRect(r, {box.x + 7.0f, box.y - 6.0f, box.w - 14.0f, box.h}, 10.0f, {255, 255, 255, 36});
+        const FRect box{x, y, kCellW, kCoverH};
+        if (sel) Theme::burst(r, box.x + box.w * 0.5f, box.y + box.h * 0.5f, 172.0f, m_clock * 6.0, Theme::Yellow, Theme::Red);
+        if (e.series) {  // a stack of issues behind the cover
+            Theme::inkBox(r, {box.x + 12.0f, box.y - 12.0f, box.w, box.h}, Theme::White, 3.0f, 0.0f);
+            Theme::inkBox(r, {box.x + 6.0f, box.y - 6.0f, box.w, box.h}, Theme::White, 3.0f, 0.0f);
         }
-        if (sel) Gfx::softRect(r, box, 12.0f, 22.0f, Theme::alpha(Theme::accent(), 120), true);
-        else Gfx::softRect(r, box, 12.0f, 16.0f, {0, 0, 0, 150}, false);
-        Gfx::roundRect(r, box, 10.0f, {24, 30, 46, 255});
+        const float ink = sel ? 6.0f : 4.0f;
+        Theme::inkBox(r, {box.x - ink, box.y - ink, box.w + 2 * ink, box.h + 2 * ink}, Theme::White, ink, sel ? 8.0f : 6.0f);
         Tex* t = cover(e.coverRel);
         if (t && t->tex) {
-            // Fill the box, cropping the long side a little (covers vary).
+            // Fill the frame, cropping the long side a little (covers vary).
             const float s = std::max(box.w / t->w, box.h / t->h);
             const float sw = box.w / s, sh = box.h / s;
             SDL_Rect src{(int)((t->w - sw) * 0.5f), (int)((t->h - sh) * 0.5f), (int)sw, (int)sh};
             SDL_Rect dst{(int)std::lround(box.x), (int)std::lround(box.y), (int)std::lround(box.w), (int)std::lround(box.h)};
             SDL_RenderCopy(r, t->tex, &src, &dst);
         } else {
-            AppFont::drawCentered(r, t && t->failed ? "Can't open" : "...", box.x + box.w * 0.5f, box.y + box.h * 0.45f,
-                                  Theme::Type::Small, Theme::Muted);
+            AppFont::drawCentered(r, t && t->failed ? "CAN'T OPEN" : "...", box.x + box.w * 0.5f, box.y + box.h * 0.45f, 28.0f,
+                                  Theme::Muted, AppFont::Face::Display);
         }
-        if (sel) {
-            const float b = 4.0f;
-            Gfx::rect(r, {box.x - b, box.y - b, box.w + 2 * b, b}, Theme::accent());
-            Gfx::rect(r, {box.x - b, box.y + box.h, box.w + 2 * b, b}, Theme::accent());
-            Gfx::rect(r, {box.x - b, box.y, b, box.h}, Theme::accent());
-            Gfx::rect(r, {box.x + box.w, box.y, b, box.h}, Theme::accent());
-        }
-        // Progress under the cover.
-        float ty = box.y + box.h + 12.0f;
+        // Progress, the title, and how far in.
         std::string detail;
         if (e.series) {
-            detail = std::to_string(e.count) + (e.count == 1 ? " book" : " books");
+            detail = std::to_string(e.count) + (e.count == 1 ? " BOOK" : " BOOKS");
         } else {
             const Library::Progress p = m_progress.get(e.rel);
             if (p.pages > 0 && p.page > 0) {
-                const float f = (p.page + 1) / (float)p.pages;
-                Gfx::rect(r, {box.x, box.y + box.h - 8.0f, box.w, 8.0f}, {0, 0, 0, 160});
-                Gfx::rect(r, {box.x, box.y + box.h - 8.0f, box.w * f, 8.0f}, Theme::accent());
-                detail = p.page >= p.pages - 1 ? "Finished" : "Page " + std::to_string(p.page + 1) + " of " + std::to_string(p.pages);
+                Theme::progress(r, {box.x + 8.0f, box.y + box.h - 22.0f, box.w - 16.0f, 14.0f}, (p.page + 1) / (float)p.pages);
+                detail = p.page >= p.pages - 1 ? "FINISHED!" : "PAGE " + std::to_string(p.page + 1) + " OF " + std::to_string(p.pages);
             } else {
-                detail = "New";
+                detail = "NEW!";
             }
         }
-        const SDL_Color ink = sel ? Theme::Text : Theme::TextDim;
-        AppFont::draw(r, Theme::ellipsize(r, e.title, kCellW, Theme::Type::Small, AppFont::Face::Body), box.x, ty, Theme::Type::Small, ink);
+        float ty = box.y + box.h + 16.0f;
+        AppFont::draw(r, Theme::ellipsize(r, e.title, kCellW, Theme::Type::Small), box.x, ty, Theme::Type::Small, Theme::Ink);
         ty += 32.0f;
-        AppFont::draw(r, detail, box.x, ty, Theme::Type::Caption, sel ? Theme::accent() : Theme::Muted);
-    }
+        AppFont::draw(r, detail, box.x, ty, 24.0f, sel ? Theme::Red : Theme::Blue, AppFont::Face::Display);
+    };
+    // The selected tile last: its starburst goes over its neighbors.
+    for (int i = firstRow * kCols; i < std::min(n, (lastRow + 1) * kCols); ++i)
+        if (i != m_sel) tile(i);
+    if (m_sel >= firstRow * kCols && m_sel < std::min(n, (lastRow + 1) * kCols)) tile(m_sel);
     SDL_RenderSetClipRect(r, nullptr);
-    Theme::counter(r, kW, m_sel + 1, n);
 }
 
 void App::renderUpload() {
     SDL_Renderer* r = m_renderer;
-    const float cx = kW * 0.5f, inner = kW - 2.0f * Theme::kMargin;
+    const float cx = kW * 0.5f, inner = kW - 2.0f * Theme::kMargin - 40.0f;
+    const AppFont::Face D = AppFont::Face::Display;
     const TransferServer::Status st = m_transfer.status();
-    float y = kGridTop + 30.0f;
+    const FRect card{Theme::kMargin, kGridTop - 10.0f, kW - 2.0f * Theme::kMargin, 420.0f};
+    Theme::inkBox(r, card, Theme::White);
+    float y = card.y + 30.0f;
     if (!st.listening) {
-        AppFont::drawCentered(r, "Couldn't start Wi-Fi upload", cx, y, Theme::Type::Heading, Theme::Text, AppFont::Face::Display);
-        AppFont::drawCentered(r, Theme::ellipsize(r, st.error, inner, Theme::Type::Small, AppFont::Face::Body), cx, y + 64.0f,
-                              Theme::Type::Small, Theme::Muted);
+        AppFont::drawCentered(r, "COULDN'T START WI-FI UPLOAD", cx, y + 40.0f, Theme::Type::Heading, Theme::Red, D);
+        AppFont::drawCentered(r, Theme::ellipsize(r, st.error, inner, Theme::Type::Small), cx, y + 110.0f, Theme::Type::Small, Theme::Ink);
     } else if (st.addresses.empty()) {
-        AppFont::drawCentered(r, "No network connection", cx, y, Theme::Type::Heading, Theme::Text, AppFont::Face::Display);
-        AppFont::drawCentered(r, "Connect the cabinet to Wi-Fi or a cable, then try again.", cx, y + 64.0f, Theme::Type::Small,
-                              Theme::Muted);
+        AppFont::drawCentered(r, "NO NETWORK!", cx, y + 40.0f, Theme::Type::Heading, Theme::Red, D);
+        AppFont::drawCentered(r, "Connect the cabinet to Wi-Fi or a cable, then try again.", cx, y + 110.0f, Theme::Type::Small, Theme::Ink);
     } else {
-        AppFont::drawCentered(r, "On a phone or computer on the same network, open", cx, y, Theme::Type::Small, Theme::Muted);
-        y += 46.0f;
+        AppFont::drawCentered(r, "ON A PHONE OR COMPUTER ON THE SAME NETWORK, OPEN", cx, y, 26.0f, Theme::Muted, D);
+        y += 44.0f;
         for (size_t i = 0; i < st.addresses.size() && i < 2; ++i) {
             const std::string url = "http://" + st.addresses[i] + (st.port == 80 ? "" : ":" + std::to_string(st.port));
-            const float us = Theme::fitSize(r, url, inner, Theme::Type::Heading, Theme::Type::Caption, AppFont::Face::Display);
-            AppFont::drawCentered(r, url, cx, y + (Theme::Type::Heading - us) * 0.5f, us, Theme::accent(), AppFont::Face::Display);
+            const float us = Theme::fitSize(r, url, inner, Theme::Type::Heading, Theme::Type::Caption, D);
+            AppFont::drawCentered(r, url, cx, y + (Theme::Type::Heading - us) * 0.5f, us, Theme::Blue, D);
             y += 58.0f;
         }
-        y += 20.0f;
-        AppFont::drawCentered(r, "and enter the PIN", cx, y, Theme::Type::Small, Theme::Muted);
+        y += 12.0f;
+        AppFont::drawCentered(r, "AND ENTER THE PIN", cx, y, 26.0f, Theme::Muted, D);
         y += 40.0f;
-        AppFont::drawCentered(r, st.pin, cx, y, Theme::Type::Hero, Theme::Text, AppFont::Face::Display);
+        Theme::letterCentered(r, st.pin, cx, y, Theme::Type::Hero, Theme::Red, 4.0f);
     }
-    y = 700.0f;
-    FRect card{Theme::kMargin - 16.0f, y, kW - 2.0f * (Theme::kMargin - 16.0f), 440.0f};
-    Theme::rowCard(r, card, false);
-    float ty = y + 26.0f;
-    const float tx = card.x + 28.0f, tw = card.w - 56.0f;
+    // What is happening, in a caption.
+    const FRect box{Theme::kMargin, card.y + card.h + 34.0f, card.w, 400.0f};
+    Theme::inkBox(r, box, Theme::Yellow);
+    float ty = box.y + 24.0f;
+    const float tx = box.x + 28.0f, tw = box.w - 56.0f;
     if (!st.current.empty()) {
-        AppFont::draw(r, "Receiving", tx, ty, Theme::Type::Caption, Theme::Muted);
-        ty += 32.0f;
-        AppFont::draw(r, Theme::ellipsize(r, st.current, tw, Theme::Type::Body, AppFont::Face::Body), tx, ty, Theme::Type::Body, Theme::Text);
-        ty += 50.0f;
+        AppFont::draw(r, "RECEIVING...", tx, ty, 28.0f, Theme::Red, D);
+        ty += 40.0f;
+        AppFont::draw(r, Theme::ellipsize(r, st.current, tw, Theme::Type::Body), tx, ty, Theme::Type::Body, Theme::Ink);
+        ty += 48.0f;
         const float f = st.currentTotal ? (float)((double)st.currentDone / (double)st.currentTotal) : 0.0f;
-        Theme::pill(r, {tx, ty, tw, 12.0f}, 6.0f, {255, 255, 255, 30});
-        if (f > 0.0f) Theme::pill(r, {tx, ty, std::max(12.0f, tw * f), 12.0f}, 6.0f, Theme::accent());
+        Theme::progress(r, {tx, ty, tw, 22.0f}, f);
         char pct[48];
         std::snprintf(pct, sizeof(pct), "%d%%  of %.1f MB", (int)(f * 100.0f), st.currentTotal / 1048576.0);
-        AppFont::draw(r, pct, tx, ty + 22.0f, Theme::Type::Caption, Theme::Muted);
-        ty += 70.0f;
+        AppFont::draw(r, pct, tx, ty + 30.0f, Theme::Type::Small, Theme::Ink);
+        ty += 76.0f;
     } else {
-        AppFont::draw(r, st.listening ? "Waiting for books" : "Not running", tx, ty, Theme::Type::Body, Theme::TextDim);
-        ty += 60.0f;
+        AppFont::draw(r, st.listening ? "WAITING FOR BOOKS..." : "NOT RUNNING", tx, ty, 32.0f, Theme::Ink, D);
+        ty += 56.0f;
     }
     if (st.received > 0) {
         char done[64];
-        std::snprintf(done, sizeof(done), "Received %d %s (%.1f MB)", st.received, st.received == 1 ? "file" : "files",
+        std::snprintf(done, sizeof(done), "RECEIVED %d %s (%.1f MB)", st.received, st.received == 1 ? "FILE" : "FILES",
                       st.receivedBytes / 1048576.0);
-        AppFont::draw(r, done, tx, ty, Theme::Type::Small, Theme::accent());
+        AppFont::draw(r, done, tx, ty, 28.0f, Theme::Red, D);
         ty += 44.0f;
     }
     for (const std::string& line : st.recent) {
-        if (ty > card.y + card.h - 40.0f) break;
-        AppFont::draw(r, Theme::ellipsize(r, line, tw, Theme::Type::Small, AppFont::Face::Body), tx, ty, Theme::Type::Small,
-                      line.find(" - failed") != std::string::npos ? Theme::Rose : Theme::TextDim);
-        ty += 38.0f;
+        if (ty > box.y + box.h - 40.0f) break;
+        AppFont::draw(r, Theme::ellipsize(r, line, tw, Theme::Type::Small), tx, ty, Theme::Type::Small,
+                      line.find(" - failed") != std::string::npos ? Theme::Red : Theme::Ink);
+        ty += 36.0f;
     }
 }
 
 void App::renderReader() {
     SDL_Renderer* r = m_renderer;
     SDL_RenderSetScale(r, 1.0f, 1.0f);
-    SDL_SetRenderDrawColor(r, 8, 9, 14, 255);
+    SDL_SetRenderDrawColor(r, Theme::Night.r, Theme::Night.g, Theme::Night.b, 255);
     SDL_RenderClear(r);
     const float e = 1.0f - std::pow(1.0f - m_slideT, 3.0f);  // ease out
     auto draw = [&](int page, float dx) {
@@ -847,35 +841,31 @@ void App::renderReader() {
     SDL_RenderSetScale(r, m_canvasScale, m_canvasScale);
     const int n = m_pages.pageCount();
     if (n == -2) {
-        Theme::emptyState(r, kW, "Can't open this book", Theme::ellipsize(r, m_pages.openError(), kW - 80.0f, Theme::Type::Small));
-        Theme::footerHints(r, kW, "B Library", "");
+        Theme::emptyState(r, "Can't open this book!", m_pages.openError());
+        Theme::footerHints(r, "B Library");
         return;
     }
     auto it = m_pageTex.find(m_page);
     if (!shown && !sliding) {
         if (it != m_pageTex.end() && it->second.failed)
-            Theme::emptyState(r, kW, "Can't show page " + std::to_string(m_page + 1),
-                              Theme::ellipsize(r, it->second.error, kW - 80.0f, Theme::Type::Small));
+            Theme::emptyState(r, "Can't show page " + std::to_string(m_page + 1) + "!", it->second.error);
         else
-            Theme::emptyState(r, kW, n > 0 ? "Page " + std::to_string(m_page + 1) : "Opening...", "");
+            Theme::letterCentered(r, n > 0 ? "PAGE " + std::to_string(m_page + 1) + "..." : "OPENING...", kW * 0.5f, 600.0f,
+                                  Theme::Type::Title, Theme::Yellow, 4.0f);
     }
     if (m_hud > 0.0f) {
-        const float a = std::min(1.0f, m_hud / 0.4f);
-        const Uint8 bg = (Uint8)(215 * a), fg = (Uint8)(255 * a);
-        // The title at the top, the page at the bottom.
-        const std::string title = Theme::ellipsize(r, m_book.title, kW - 120.0f, Theme::Type::Body);
-        const float tw = AppFont::measureWidth(r, title, Theme::Type::Body) + 56.0f;
-        Gfx::roundRect(r, {(kW - tw) * 0.5f, 30.0f, tw, 58.0f}, 29.0f, {12, 16, 28, bg});
-        AppFont::drawCentered(r, title, kW * 0.5f, 42.0f, Theme::Type::Body, Gfx::withAlpha(Theme::Text, fg));
+        // The title in a caption at the top, the page at the bottom.
+        const AppFont::Face D = AppFont::Face::Display;
+        const std::string title = Theme::ellipsize(r, Theme::upper(m_book.title), kW - 140.0f, 34.0f, D);
+        const float tw = Theme::width(r, title, 34.0f, D) + 50.0f;
+        Theme::inkBox(r, {(kW - tw) * 0.5f, 28.0f, tw, 60.0f}, Theme::Yellow);
+        AppFont::drawCentered(r, title, kW * 0.5f, 40.0f, 34.0f, Theme::Ink, D);
         if (m_pagesN > 0) {
-            const std::string pg = std::to_string(m_page + 1) + " / " + std::to_string(m_pagesN);
-            const float pw = 300.0f;
-            const FRect rc{(kW - pw) * 0.5f, kH - 150.0f, pw, 100.0f};
-            Gfx::roundRect(r, rc, 24.0f, {12, 16, 28, bg});
-            AppFont::drawCentered(r, pg, kW * 0.5f, rc.y + 12.0f, Theme::Type::Heading, Gfx::withAlpha(Theme::Text, fg), AppFont::Face::Display);
-            const float f = (m_page + 1) / (float)m_pagesN;
-            Gfx::roundRect(r, {rc.x + 30.0f, rc.y + 70.0f, rc.w - 60.0f, 8.0f}, 4.0f, {255, 255, 255, (Uint8)(40 * a)});
-            Gfx::roundRect(r, {rc.x + 30.0f, rc.y + 70.0f, (rc.w - 60.0f) * f, 8.0f}, 4.0f, Gfx::withAlpha(Theme::accent(), fg));
+            const FRect rc{(kW - 300.0f) * 0.5f, kH - 160.0f, 300.0f, 110.0f};
+            Theme::inkBox(r, rc, Theme::White);
+            AppFont::drawCentered(r, std::to_string(m_page + 1) + " / " + std::to_string(m_pagesN), kW * 0.5f, rc.y + 12.0f,
+                                  Theme::Type::Heading, Theme::Ink, D);
+            Theme::progress(r, {rc.x + 28.0f, rc.y + 70.0f, rc.w - 56.0f, 18.0f}, (m_page + 1) / (float)m_pagesN);
         }
     }
 }
